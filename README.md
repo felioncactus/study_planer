@@ -1,50 +1,96 @@
 # Study Planner (PERN Capstone)
 
 A Study Planner web app built with:
-- PostgreSQL (database)
-- Express + Node.js (API server)
-- React (Vite) (client)
 
-## Repo Structure
+- **PostgreSQL** (database)
+- **Express + Node.js** (API server)
+- **React + Vite** (client)
 
-/server # Express API + PostgreSQL
-/client # React (Vite) frontend
+---
 
+## Table of contents
+
+- [Repo structure](#repo-structure)
+- [Prerequisites](#prerequisites)
+- [Setup (from scratch)](#setup-from-scratch)
+- [MVP features](#mvp-features)
+- [API endpoints](#api-endpoints)
+- [Scripts](#scripts)
+- [Troubleshooting](#troubleshooting)
+- [Git / secrets](#git--secrets)
+- [Team workflow](#team-workflow)
+
+---
+
+## Repo structure
+
+```
+/server   # Express API + PostgreSQL
+/client   # React (Vite) frontend
+```
+
+---
 
 ## Prerequisites
 
 Install these first:
 
-- Node.js (LTS recommended)  
+- **Node.js (LTS recommended)**  
   Verify:
   ```bash
   node -v
   npm -v
+  ```
 
-    PostgreSQL (local)
-    Verify:
+- **PostgreSQL (local)**  
+  Verify:
+  ```bash
+  psql --version
+  ```
 
-    psql --version
+### Windows PATH note (Postgres tools)
 
-Windows note: If psql / createdb are “not found”, install PostgreSQL and add its bin folder to PATH.
-Example: C:\Program Files\PostgreSQL\16\bin
-Then restart your terminal.
-1) Clone the repo
+If `psql` or `createdb` are “not found” on Windows:
 
+1. Install PostgreSQL
+2. Add Postgres **bin** folder to PATH, e.g.
+   `C:\Program Files\PostgreSQL\16\bin`
+3. Restart your terminal
+
+---
+
+## Setup (from scratch)
+
+### 1) Clone the repo
+
+```bash
 git clone <YOUR_REPO_URL>
 cd std_planer
+```
 
-2) Setup environment variables
-Server env
+---
 
-Copy the example file:
+### 2) Environment variables
 
+#### Server
+
+Copy the example env file and edit it:
+
+**macOS / Linux / Git Bash**
+```bash
 cp server/.env.example server/.env
+```
 
-Edit server/.env and set your local DB password and JWT secret.
+**Windows PowerShell**
+```powershell
+Copy-Item server/.env.example server/.env
+```
 
-Example server/.env:
+Edit `server/.env` and set your local DB password and JWT secret.
 
+Example `server/.env`:
+
+```env
 PORT=5000
 CORS_ORIGIN=http://localhost:5173
 
@@ -52,226 +98,241 @@ DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/study_planner
 
 JWT_SECRET=change_me_super_secret
 JWT_EXPIRES_IN=7d
+```
 
-Client env
+#### Client
 
-Copy the example file:
+Copy the example env file:
 
+**macOS / Linux / Git Bash**
+```bash
 cp client/.env.example client/.env
+```
 
-Example client/.env:
+**Windows PowerShell**
+```powershell
+Copy-Item client/.env.example client/.env
+```
 
+Example `client/.env`:
+
+```env
 VITE_API_BASE_URL=/api
+```
 
-We use a Vite dev proxy, so the client calls /api/* and Vite forwards requests to the backend.
-3) Create the database
+> We use a **Vite dev proxy**, so the client calls `/api/*` and Vite forwards requests to the backend.
 
-Option A: CLI (recommended)
+---
 
+### 3) Create the database
+
+#### Option A: CLI (recommended)
+
+Create the DB:
+
+```bash
 createdb -U postgres study_planner
+```
+
+Enable UUID extension (recommended):
+
+```bash
 psql -U postgres -d study_planner -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+```
 
-Option B: pgAdmin
+#### Option B: pgAdmin
 
-    Create a database named study_planner
+- Create a database named `study_planner`
+- Run in Query Tool:
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  ```
 
-    Run in Query Tool:
+---
 
-    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+### 4) Install dependencies
 
-4) Install dependencies
+#### Server
 
-Server:
-
+```bash
 cd server
 npm install
+```
 
-Client:
+#### Client
 
+```bash
 cd ../client
 npm install
+```
 
-5) Run migrations (create tables)
+---
 
-From server/:
+### 5) Run migrations (create tables)
 
+From `server/`:
+
+```bash
 npm run migrate
+```
 
-First time you should see:
+Expected output:
 
-    ✅ Applied: 001_init.sql
+- First time: `✅ Applied: 001_init.sql`
+- Later runs: `✅ No pending migrations.`
 
-Later runs should show:
+---
 
-    ✅ No pending migrations.
+### 6) Run the app (development)
 
-6) Run the app (development)
+You need **two terminals**.
 
-You need two terminals.
+#### Terminal 1 — Server
 
-Terminal 1 — Server:
-
+```bash
 cd server
 npm run dev
+```
 
-Server runs at:
+Server runs at: `http://localhost:5000`
 
-    http://localhost:5000
+Quick test: `http://localhost:5000/api/ping`
 
-Quick test:
+#### Terminal 2 — Client
 
-    http://localhost:5000/api/ping
-
-Terminal 2 — Client:
-
+```bash
 cd client
 npm run dev
+```
 
-Client runs at:
+Client runs at: `http://localhost:5173`
 
-    http://localhost:5173
+---
 
-MVP Features
+## MVP features
 
-    User accounts (register/login)
+- User accounts (register / login)
+- Courses (create / list / delete)
+- Tasks (create / list / update / delete)
+- Weekly view
+- Task statuses: `todo | doing | done`
+- Dashboard summary endpoint (counts)
 
-    Courses (create/list/delete)
+---
 
-    Tasks (create/list/update/delete)
+## API endpoints
 
-    Weekly view
+### Auth
 
-    Task statuses: todo | doing | done
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me` (requires `Authorization: Bearer <token>`)
 
-    Dashboard summary endpoint: tasks overview counts
+### Courses (protected)
 
-Useful API Endpoints (MVP)
-
-Auth:
-
-    POST /api/auth/register
-
-    POST /api/auth/login
-
-    GET /api/auth/me (requires Authorization: Bearer <token>)
-
-Courses (protected):
-
-    GET /api/courses
-
-    POST /api/courses
-
-    PUT /api/courses/:id
-
-    DELETE /api/courses/:id
+- `GET /api/courses`
+- `POST /api/courses`
+- `PUT /api/courses/:id`
+- `DELETE /api/courses/:id`
 
 Body example:
 
+```json
 { "name": "CS101", "color": "blue" }
+```
 
-Tasks (protected):
+### Tasks (protected)
 
-    GET /api/tasks
-
-    POST /api/tasks
-
-    PUT /api/tasks/:id
-
-    DELETE /api/tasks/:id
-
-    GET /api/tasks/summary
+- `GET /api/tasks`
+- `POST /api/tasks`
+- `PUT /api/tasks/:id`
+- `DELETE /api/tasks/:id`
+- `GET /api/tasks/summary`
 
 Task body example:
 
+```json
 {
   "title": "Homework 1",
   "dueDate": "2026-01-15",
   "status": "todo",
   "courseId": "<uuid>"
 }
+```
 
 Query filters for listing tasks:
 
-    /api/tasks?status=todo
+- `/api/tasks?status=todo`
+- `/api/tasks?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `/api/tasks?courseId=<uuid>`
 
-    /api/tasks?from=YYYY-MM-DD&to=YYYY-MM-DD
+---
 
-    /api/tasks?courseId=<uuid>
+## Scripts
 
-Scripts
+### Server (run from `server/`)
 
-Server (run from server/):
+- `npm run dev` — start API with nodemon
+- `npm start` — start API (production style)
+- `npm run migrate` — apply SQL migrations
 
-    npm run dev — start API with nodemon
+### Client (run from `client/`)
 
-    npm start — start API (production style)
+- `npm run dev` — start Vite dev server
+- `npm run build` — build frontend
+- `npm run preview` — preview production build locally
 
-    npm run migrate — apply SQL migrations
+---
 
-Client (run from client/):
+## Troubleshooting
 
-    npm run dev — start Vite dev server
+### DATABASE_URL is missing
 
-    npm run build — build frontend
+- Ensure `server/.env` exists (**not** `.env.txt`)
+- Ensure `server/.env` contains `DATABASE_URL=...`
+- Restart `npm run dev` after changes
 
-    npm run preview — preview production build locally
+### Cannot GET /api/auth/register
 
-Common Troubleshooting
+That endpoint is **POST**, not GET. Use the React UI or a REST client.
 
-DATABASE_URL is missing:
+### Register/Login fails from the client
 
-    Ensure server/.env exists (not .env.txt)
+- Ensure **both** server + client are running
+- Test server: `http://localhost:5000/api/ping`
+- Ensure the client is using `/api` via the Vite proxy (`VITE_API_BASE_URL=/api`)
 
-    Ensure it contains DATABASE_URL=...
+### Postgres tools not found (Windows)
 
-Cannot GET /api/auth/register:
+- Install PostgreSQL
+- Add Postgres `bin` folder to PATH
+- Restart terminal
 
-    That endpoint is POST, not GET. Use the React UI or a REST client.
+---
 
-Register/Login fails from the client:
+## Git / secrets
 
-    Ensure both server + client are running
+✅ Commit:
 
-    Test server: http://localhost:5000/api/ping
+- `server/.env.example`
+- `client/.env.example`
 
-    Ensure client proxy is configured (Vite proxy routes /api to the server)
+❌ Do **NOT** commit:
 
-Postgres tools not found (Windows):
+- `server/.env`
+- `client/.env`
+- `node_modules/`
+- build output (`dist/`, `build/`)
 
-    Install PostgreSQL
+---
 
-    Add Postgres bin folder to PATH
+## Team workflow
 
-    Restart terminal
-
-Git / Secrets
-
-Commit:
-
-    server/.env.example
-
-    client/.env.example
-
-Do NOT commit:
-
-    server/.env
-
-    client/.env
-
-    node_modules/
-
-    build output folders (dist/, build/)
-
-Team Workflow (Recommended)
-
-    Create feature branches:
-
-git checkout -b feature/<short-name>
-
-Commit often with clear messages:
-
-    feat: add tasks CRUD
-
-    fix: handle auth token
-
-Use PRs to merge into main (or dev if you use one)
+- Create feature branches:
+  ```bash
+  git checkout -b feature/<short-name>
+  ```
+- Commit often with clear messages:
+  - `feat: add tasks CRUD`
+  - `fix: handle auth token`
+- Use PRs to merge into `main` (or `dev` if you use one)
