@@ -1,8 +1,8 @@
 # TODO List
 
 ## High Priority
-- [ ] AI and our poject (HOW?)
-- [ ] Communication with ohter users?
+- [ ] Fix A.I Assistant. do display changes immidiately
+- [ ] Communication with ohter users? (Freinds)
 - [ ] Responsive and good looking design
 
 ## Medium Priority
@@ -13,9 +13,9 @@
 - [ ] Put some task here
 
 ## Completed
-- [x] Finished task
+- [x] AI and our poject (HOW?)
+
 
 ---
-
 ### Notes
 Add any additional context or details here.
