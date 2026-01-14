@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ChatWidget from "./ChatWidget";
 
 const linkStyle = ({ isActive }) => ({
   padding: "8px 10px",
@@ -14,6 +15,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
+    <>
     <div style={{ borderBottom: "1px solid #ddd", padding: 12 }}>
       <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
         <Link to="/" style={{ fontWeight: 800, textDecoration: "none", color: "black" }}>
@@ -33,5 +35,7 @@ export default function Navbar() {
         </div>
       </div>
     </div>
+    <ChatWidget />
+    </>
   );
 }

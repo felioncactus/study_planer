@@ -34,7 +34,7 @@ export async function listTasksByUserId(userId, filters) {
   }
 
   const result = await pool.query(
-    `SELECT id, user_id, course_id, title, description, due_date, status, created_at, updated_at
+    `SELECT id, user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable, created_at, updated_at
      FROM tasks
      WHERE ${where.join(" AND ")}
      ORDER BY
@@ -54,11 +54,14 @@ export async function createTask({
   description,
   dueDate,
   status,
+  estimatedMinutes,
+  priority,
+  splittable,
 }) {
   const result = await pool.query(
-    `INSERT INTO tasks (user_id, course_id, title, description, due_date, status)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING id, user_id, course_id, title, description, due_date, status, created_at, updated_at;`,
+    `INSERT INTO tasks (user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING id, user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable, created_at, updated_at;`,
     [
       userId,
       courseId ?? null,
@@ -66,6 +69,9 @@ export async function createTask({
       description ?? null,
       dueDate ?? null,
       status,
+      estimatedMinutes,
+      priority,
+      splittable,
     ]
   );
   return result.rows[0];
@@ -79,6 +85,9 @@ export async function updateTask({
   description,
   dueDate,
   status,
+  estimatedMinutes,
+  priority,
+  splittable,
 }) {
   const result = await pool.query(
     `UPDATE tasks
@@ -87,9 +96,12 @@ export async function updateTask({
        title = COALESCE($4, title),
        description = COALESCE($5, description),
        due_date = COALESCE($6, due_date),
-       status = COALESCE($7, status)
+       status = COALESCE($7, status),
+       estimated_minutes = COALESCE($8, estimated_minutes),
+       priority = COALESCE($9, priority),
+       splittable = COALESCE($10, splittable)
      WHERE id = $1 AND user_id = $2
-     RETURNING id, user_id, course_id, title, description, due_date, status, created_at, updated_at;`,
+     RETURNING id, user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable, created_at, updated_at;`,
     [
       taskId,
       userId,
@@ -98,6 +110,9 @@ export async function updateTask({
       description,
       dueDate,
       status,
+      estimatedMinutes,
+      priority,
+      splittable,
     ]
   );
 
@@ -109,7 +124,7 @@ export async function setTaskCourseId({ taskId, userId, courseId }) {
     `UPDATE tasks
      SET course_id = $3
      WHERE id = $1 AND user_id = $2
-     RETURNING id, user_id, course_id, title, description, due_date, status, created_at, updated_at;`,
+     RETURNING id, user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable, created_at, updated_at;`,
     [taskId, userId, courseId]
   );
   return result.rows[0] || null;

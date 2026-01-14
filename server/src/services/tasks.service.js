@@ -19,6 +19,9 @@ function normalizeBody(input) {
     due_date: input.due_date ?? input.dueDate,
     status: input.status,
     course_id: input.course_id ?? input.courseId,
+    estimated_minutes: input.estimated_minutes ?? input.estimatedMinutes,
+    priority: input.priority,
+    splittable: input.splittable,
   };
 }
 
@@ -28,6 +31,9 @@ const createSchema = z.object({
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   status: statusEnum.optional().default("todo"),
   course_id: z.string().uuid().optional().nullable(),
+  estimated_minutes: z.number().int().min(1).max(24 * 60).optional().default(60),
+  priority: z.number().int().min(1).max(5).optional().default(3),
+  splittable: z.boolean().optional().default(true),
 });
 
 const updateSchema = z
@@ -37,6 +43,9 @@ const updateSchema = z
     due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
     status: statusEnum.optional(),
     course_id: z.string().uuid().optional().nullable(),
+    estimated_minutes: z.number().int().min(1).max(24 * 60).optional(),
+    priority: z.number().int().min(1).max(5).optional(),
+    splittable: z.boolean().optional(),
   })
   .refine((obj) => Object.keys(obj).length > 0, {
     message: "At least one field is required",
@@ -64,7 +73,7 @@ export async function createTaskForUser(userId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable } = parsed.data;
 
   if (course_id) {
     const ok = await courseExistsForUser({ courseId: course_id, userId });
@@ -80,6 +89,9 @@ export async function createTaskForUser(userId, body) {
     description: description ?? null,
     dueDate: due_date ?? null,
     status,
+    estimatedMinutes: estimated_minutes,
+    priority,
+    splittable,
   });
 }
 
@@ -90,7 +102,7 @@ export async function updateTaskForUser(userId, taskId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable } = parsed.data;
 
   if (Object.prototype.hasOwnProperty.call(parsed.data, "course_id")) {
     if (course_id) {
@@ -139,6 +151,15 @@ export async function updateTaskForUser(userId, taskId, body) {
       ? (due_date ?? null)
       : undefined,
     status: status ?? undefined,
+    estimatedMinutes: Object.prototype.hasOwnProperty.call(parsed.data, "estimated_minutes")
+      ? estimated_minutes
+      : undefined,
+    priority: Object.prototype.hasOwnProperty.call(parsed.data, "priority")
+      ? priority
+      : undefined,
+    splittable: Object.prototype.hasOwnProperty.call(parsed.data, "splittable")
+      ? splittable
+      : undefined,
   });
 
   if (!updated) {
