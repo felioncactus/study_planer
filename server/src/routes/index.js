@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authRouter } from "./auth.routes.js";
+import { usersRouter } from "./users.routes.js";
 import { coursesRouter } from "./courses.routes.js";
 import { tasksRouter } from "./tasks.routes.js";
 import { assistantRouter } from "./assistant.routes.js";
@@ -11,6 +12,7 @@ apiRouter.get("/ping", (req, res) => {
 });
 
 apiRouter.use("/auth", authRouter);
+apiRouter.use("/users", usersRouter);
 apiRouter.use("/courses", coursesRouter);
 apiRouter.use("/tasks", tasksRouter);
 

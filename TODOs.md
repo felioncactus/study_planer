@@ -1,7 +1,8 @@
 # TODO List
 
 ## High Priority
-- [ ] Fix A.I Assistant. do display changes immidiately
+- [ ] Fix A.I Assistant to display changes immidiately
+- [ ] Fix an A.I widget to display properly 
 - [ ] Communication with ohter users? (Freinds)
 - [ ] Responsive and good looking design
 

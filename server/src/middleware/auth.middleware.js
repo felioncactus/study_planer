@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import { unauthorized } from "../utils/httpError.js";
+import { findUserById } from "../repositories/users.repo.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
   const [type, token] = header.split(" ");
 
@@ -11,7 +12,14 @@ export function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: payload.sub, email: payload.email, name: payload.name };
+
+    // Always load user from DB so we don't bloat JWT (e.g., base64 avatars)
+    const user = await findUserById(payload.sub);
+    if (!user) {
+      return next(unauthorized("User not found"));
+    }
+
+    req.user = user;
     return next();
   } catch {
     return next(unauthorized("Invalid or expired token"));

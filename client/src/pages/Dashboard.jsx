@@ -22,7 +22,7 @@ function startOfWeekMonday(d) {
 
 function Card({ title, value, hint }) {
   return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 14 }}>
+    <div className="card">
       <div style={{ fontSize: 13, color: "#555" }}>{title}</div>
       <div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{value}</div>
       {hint ? <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>{hint}</div> : null}
@@ -93,7 +93,7 @@ export default function Dashboard() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
-          <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16 }}>
+          <div className="card">
             <h3 style={{ marginTop: 0 }}>Quick actions</h3>
             <ul>
               <li><Link to="/courses">Create courses</Link> (CS101, Math, …)</li>
@@ -102,7 +102,7 @@ export default function Dashboard() {
             </ul>
           </div>
 
-          <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16 }}>
+          <div className="card">
             <h3 style={{ marginTop: 0 }}>This week (not done)</h3>
             {weekTasks.length === 0 ? (
               <div>No upcoming tasks due this week.</div>

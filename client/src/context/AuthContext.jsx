@@ -5,14 +5,29 @@ import { setAuthToken } from "../api/http";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("token") || "");
+  const [token, setToken] = useState(() => {
+    const t = localStorage.getItem("token") || "";
+    // Guard: if an old JWT accidentally contains huge payload (e.g., base64 avatar), Vite may return 431.
+    // Typical JWTs are well under a few KB.
+    if (t && t.length > 4000) {
+      localStorage.removeItem("token");
+      return "";
+    }
+    return t;
+  });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  function applySession(data) {
+    setToken(data?.token || "");
+    setUser(data?.user || null);
+  }
 
   // keep axios auth header in sync
   useEffect(() => {
     setAuthToken(token);
-    if (token) localStorage.setItem("token", token);
+    if (token && token.length <= 4000) localStorage.setItem("token", token);
+    else if (token && token.length > 4000) localStorage.removeItem("token");
     else localStorage.removeItem("token");
   }, [token]);
 
@@ -25,15 +40,9 @@ export function AuthProvider({ children }) {
         if (token) {
           const data = await apiMe();
           if (!cancelled) setUser(data.user);
-        } else {
-          setUser(null);
         }
       } catch {
-        // token invalid/expired
-        if (!cancelled) {
-          setToken("");
-          setUser(null);
-        }
+        if (!cancelled) applySession(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -43,29 +52,32 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, []); // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function register(payload) {
     const data = await apiRegister(payload);
-    setToken(data.token);
-    setUser(data.user);
+    applySession(data);
     return data.user;
   }
 
   async function login(payload) {
     const data = await apiLogin(payload);
-    setToken(data.token);
-    setUser(data.user);
+    applySession(data);
     return data.user;
   }
 
   function logout() {
-    setToken("");
-    setUser(null);
+    applySession(null);
+  }
+
+  // Used by Account Settings after profile updates
+  function updateSession(data) {
+    applySession(data);
   }
 
   const value = useMemo(
-    () => ({ token, user, loading, register, login, logout }),
+    () => ({ token, user, loading, register, login, logout, updateSession }),
     [token, user, loading]
   );
 

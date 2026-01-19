@@ -70,7 +70,7 @@ export default function Courses() {
           {error && <div style={{ color: "crimson", marginTop: 10 }}>{error}</div>}
         </div>
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16 }}>
+        <div className="card">
           <h3>Your courses</h3>
           {loading ? (
             <div>Loading...</div>

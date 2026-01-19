@@ -10,9 +10,10 @@ const styles = {
     width: 54,
     height: 54,
     borderRadius: 999,
-    border: "1px solid #ddd",
-    background: "white",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    color: "var(--fg)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
     cursor: "pointer",
     display: "grid",
     placeItems: "center",
@@ -21,80 +22,103 @@ const styles = {
   panel: {
     position: "fixed",
     right: 18,
-    bottom: 86,
+    bottom: 84,
     width: 360,
-    maxWidth: "calc(100vw - 36px)",
-    height: 460,
-    maxHeight: "calc(100vh - 120px)",
+    height: 520,
     borderRadius: 16,
-    border: "1px solid #ddd",
-    background: "white",
-    boxShadow: "0 16px 40px rgba(0,0,0,0.18)",
+    border: "1px solid var(--border)",
+    background: "var(--bg)",
+    color: "var(--fg)",
+    boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
     overflow: "hidden",
-    zIndex: 9999,
     display: "flex",
     flexDirection: "column",
+    zIndex: 9999,
   },
   header: {
-    padding: "10px 12px",
-    borderBottom: "1px solid #eee",
     display: "flex",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 10,
+    padding: "12px 12px",
+    borderBottom: "1px solid var(--border)",
+    background: "var(--card)",
+  },
+  title: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    lineHeight: 1.15,
+  },
+  titleTop: { fontSize: 14, fontWeight: 700 },
+  titleSub: { fontSize: 12, color: "var(--muted)" },
+  closeBtn: {
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--fg)",
+    borderRadius: 10,
+    padding: "6px 10px",
+    cursor: "pointer",
   },
   body: {
     flex: 1,
     overflow: "auto",
     padding: 12,
-    background: "#fafafa",
-  },
-  inputRow: {
-    borderTop: "1px solid #eee",
-    padding: 10,
     display: "flex",
-    gap: 8,
-    alignItems: "center",
-    background: "white",
-  },
-  input: {
-    flex: 1,
-    borderRadius: 12,
-    border: "1px solid #ddd",
-    padding: "10px 12px",
-    outline: "none",
-    fontSize: 14,
-  },
-  send: {
-    borderRadius: 12,
-    border: "1px solid #ddd",
-    padding: "10px 12px",
-    background: "black",
-    color: "white",
-    cursor: "pointer",
+    flexDirection: "column",
+    gap: 10,
+    background: "var(--bg)",
   },
   msgRow: (role) => ({
     display: "flex",
     justifyContent: role === "user" ? "flex-end" : "flex-start",
-    marginBottom: 10,
   }),
+
   bubble: (role) => ({
     maxWidth: "85%",
-    whiteSpace: "pre-wrap",
-    fontSize: 14,
-    lineHeight: 1.35,
+    alignSelf: role === "user" ? "flex-end" : "flex-start",
     padding: "10px 12px",
     borderRadius: 14,
-    border: "1px solid #e5e5e5",
-    background: role === "user" ? "white" : "#fff",
+    border: "1px solid var(--border)",
+    background: role === "user" ? "var(--card-2)" : "var(--card)",
+    color: "var(--fg)",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
   }),
   hint: {
     fontSize: 12,
-    color: "#666",
+    color: "var(--muted)",
     padding: "8px 12px",
-    borderTop: "1px dashed #eee",
-    background: "white",
+    borderTop: "1px dashed var(--border)",
+    background: "var(--bg)",
+  },
+  form: {
+    display: "flex",
+    gap: 8,
+    padding: 12,
+    borderTop: "1px solid var(--border)",
+    background: "var(--card)",
+  },
+  input: {
+    flex: 1,
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    background: "var(--bg)",
+    color: "var(--fg)",
+    padding: "10px 12px",
+    outline: "none",
+  },
+  sendBtn: {
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    background: "var(--accent-2)",
+    color: "var(--fg)",
+    padding: "10px 12px",
+    cursor: "pointer",
+    fontWeight: 600,
   },
 };
+
 
 export default function ChatWidget() {
   const { token } = useAuth();
@@ -148,10 +172,10 @@ export default function ChatWidget() {
           <div style={styles.header}>
             <div style={{ fontWeight: 700 }}>Study Assistant</div>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-              <button onClick={() => setMessages(messages.slice(0, 1))} style={{ border: "1px solid #ddd", borderRadius: 10, padding: "6px 10px" }}>
+              <button onClick={() => setMessages(messages.slice(0, 1))} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "6px 10px", background: "transparent", color: "var(--fg)" }}>
                 Clear
               </button>
-              <button onClick={() => setOpen(false)} style={{ border: "1px solid #ddd", borderRadius: 10, padding: "6px 10px" }}>
+              <button onClick={() => setOpen(false)} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: "6px 10px", background: "transparent", color: "var(--fg)" }}>
                 ✕
               </button>
             </div>

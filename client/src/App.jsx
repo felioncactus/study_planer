@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import Tasks from "./pages/Tasks";
 import Weekly from "./pages/Weekly";
+import Settings from "./pages/Settings";
 
 export default function App() {
   return (
@@ -19,7 +20,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/courses"
         element={
@@ -28,7 +28,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/tasks"
         element={
@@ -37,12 +36,19 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/week"
         element={
           <ProtectedRoute>
             <Weekly />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />

@@ -76,7 +76,7 @@ export default function Weekly() {
 
         {error && <div style={{ color: "crimson", marginBottom: 10 }}>{error}</div>}
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16 }}>
+        <div className="card">
           {loading ? (
             <div>Loading...</div>
           ) : tasks.length === 0 ? (
