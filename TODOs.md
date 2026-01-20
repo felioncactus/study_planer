@@ -3,7 +3,6 @@
 ## High Priority
 - [ ] Fix A.I Assistant to display changes immidiately
 - [ ] Fix an A.I widget to display properly 
-- [ ] Communication with ohter users? (Freinds)
 - [ ] Responsive and good looking design
 
 ## Medium Priority
@@ -15,7 +14,7 @@
 
 ## Completed
 - [x] AI and our poject (HOW?)
-
+- [x] Communication with ohter users? (Freinds)
 
 ---
 ### Notes
