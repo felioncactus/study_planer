@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import ChatWidget from "./ChatWidget";
+import { fetchFriendNotifications } from "../api/notifications.api";
 
 function initials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -14,8 +15,33 @@ function initials(name = "") {
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [friendBadge, setFriendBadge] = useState(0);
 
   const linkClass = ({ isActive }) => "nav-link" + (isActive ? " active" : "");
+
+  useEffect(() => {
+    let alive = true;
+    let t = null;
+
+    async function load() {
+      try {
+        const d = await fetchFriendNotifications();
+        if (!alive) return;
+        setFriendBadge(d?.total ? Number(d.total) : 0);
+      } catch {
+        // ignore
+      }
+    }
+
+    // initial + poll
+    load();
+    t = setInterval(load, 8000);
+
+    return () => {
+      alive = false;
+      if (t) clearInterval(t);
+    };
+  }, []);
 
   return (
     <>
@@ -34,6 +60,12 @@ export default function Navbar() {
               </NavLink>
               <NavLink to="/week" className={linkClass}>
                 Weekly
+              </NavLink>
+              <NavLink to="/friends" className={linkClass}>
+                <span className="nav-link-with-badge">
+                  Friends
+                  {friendBadge > 0 ? <span className="nav-badge">{friendBadge}</span> : null}
+                </span>
               </NavLink>
               <NavLink to="/settings" className={linkClass}>
                 Settings

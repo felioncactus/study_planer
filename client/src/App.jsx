@@ -8,6 +8,8 @@ import Courses from "./pages/Courses";
 import Tasks from "./pages/Tasks";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
+import Friends from "./pages/Friends";
+import FriendChat from "./pages/FriendChat";
 
 export default function App() {
   return (
@@ -49,6 +51,24 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <Friends />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chat/:friendId"
+        element={
+          <ProtectedRoute>
+            <FriendChat />
           </ProtectedRoute>
         }
       />
