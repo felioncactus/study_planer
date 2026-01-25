@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { apiListCourses } from "../api/courses.api";
 import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask } from "../api/tasks.api";
+import { useLocation, Link } from "react-router-dom";
 
 export default function Tasks() {
+  const location = useLocation();
+
   const [courses, setCourses] = useState([]);
   const [tasks, setTasks] = useState([]);
 
@@ -13,6 +16,8 @@ export default function Tasks() {
   const [courseId, setCourseId] = useState("");
 
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterCourseId, setFilterCourseId] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -22,14 +27,23 @@ export default function Tasks() {
     return m;
   }, [courses]);
 
+  useEffect(() => {
+    // support deep-link: /tasks?courseId=<uuid>
+    const qs = new URLSearchParams(location.search);
+    const qCourse = qs.get("courseId") || "";
+    if (qCourse) setFilterCourseId(qCourse);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function refresh() {
     setError("");
     setLoading(true);
     try {
-      const [cData, tData] = await Promise.all([
-        apiListCourses(),
-        apiListTasks(filterStatus ? { status: filterStatus } : {}),
-      ]);
+      const filters = {};
+      if (filterStatus) filters.status = filterStatus;
+      if (filterCourseId) filters.courseId = filterCourseId;
+
+      const [cData, tData] = await Promise.all([apiListCourses(), apiListTasks(filters)]);
       setCourses(cData.courses);
       setTasks(tData.tasks);
     } catch (err) {
@@ -41,21 +55,20 @@ export default function Tasks() {
 
   useEffect(() => {
     refresh();
-  }, [filterStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterCourseId]);
 
   async function onCreate(e) {
     e.preventDefault();
     setError("");
     try {
-      const payload = {
-        title,
-        status,
-      };
+      const payload = { title, status };
       if (dueDate) payload.dueDate = dueDate;
       if (courseId) payload.courseId = courseId;
 
       const data = await apiCreateTask(payload);
       setTasks((prev) => [data.task, ...prev]);
+
       setTitle("");
       setDueDate("");
       setStatus("todo");
@@ -75,11 +88,11 @@ export default function Tasks() {
     }
   }
 
-  async function onDelete(taskId) {
+  async function onDelete(id) {
     setError("");
     try {
-      await apiDeleteTask(taskId);
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      await apiDeleteTask(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to delete task");
     }
@@ -88,98 +101,133 @@ export default function Tasks() {
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
-        <h2>Tasks</h2>
+      <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <h2 style={{ margin: 0 }}>Tasks</h2>
+          <Link to="/courses" style={{ fontSize: 14 }}>
+            Go to courses →
+          </Link>
+        </div>
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <h3>Create task</h3>
-
-          <form onSubmit={onCreate} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-            <label>
+        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16, marginTop: 14, marginBottom: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Create task</h3>
+          <form onSubmit={onCreate} style={{ display: "grid", gap: 10 }}>
+            <label style={{ display: "grid", gap: 6 }}>
               Title
               <input value={title} onChange={(e) => setTitle(e.target.value)} style={{ width: "100%" }} />
             </label>
 
-            <label>
-              Due date (optional)
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                Due date
+                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              </label>
 
-            <label>
-              Status
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="todo">todo</option>
-                <option value="doing">doing</option>
-                <option value="done">done</option>
-              </select>
-            </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                Status
+                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="todo">todo</option>
+                  <option value="doing">doing</option>
+                  <option value="done">done</option>
+                </select>
+              </label>
 
-            <label>
-              Course (optional)
-              <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
-                <option value="">— none —</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                Course (optional)
+                <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                  <option value="">(none)</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-            <button type="submit">Create</button>
+            <button type="submit" disabled={!title.trim()}>
+              Create
+            </button>
           </form>
 
           {error && <div style={{ color: "crimson", marginTop: 10 }}>{error}</div>}
         </div>
 
         <div className="card">
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <h3 style={{ margin: 0 }}>Your tasks</h3>
 
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 14, color: "#444" }}>Filter:</span>
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                <option value="">all</option>
-                <option value="todo">todo</option>
-                <option value="doing">doing</option>
-                <option value="done">done</option>
-              </select>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13 }}>
+                Status
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="todo">todo</option>
+                  <option value="doing">doing</option>
+                  <option value="done">done</option>
+                </select>
+              </label>
+
+              <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13 }}>
+                Course
+                <select value={filterCourseId} onChange={(e) => setFilterCourseId(e.target.value)}>
+                  <option value="">All</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
 
           {loading ? (
             <div style={{ marginTop: 12 }}>Loading...</div>
           ) : tasks.length === 0 ? (
-            <div style={{ marginTop: 12 }}>No tasks yet.</div>
+            <div style={{ marginTop: 12, color: "#666" }}>No tasks found.</div>
           ) : (
-            <ul style={{ paddingLeft: 18, marginTop: 12 }}>
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {tasks.map((t) => {
-                const c = t.course_id ? courseMap.get(t.course_id) : null;
+                const course = t.course_id ? courseMap.get(t.course_id) : null;
                 return (
-                  <li key={t.id} style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ minWidth: 260 }}>
-                        <b>{t.title}</b>
-                        <div style={{ fontSize: 13, color: "#555" }}>
-                          {t.due_date ? `Due: ${t.due_date}` : "No due date"}{" "}
-                          {c ? `• Course: ${c.name}` : ""}
-                        </div>
+                  <div
+                    key={t.id}
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 14,
+                      padding: 12,
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, color: "#111" }}>{t.title}</div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                        {t.due_date ? `Due: ${t.due_date} • ` : ""}
+                        Status: {t.status}
+                        {course ? (
+                          <>
+                            {" • "}
+                            <Link to={`/courses/${course.id}`}>{course.name}</Link>
+                          </>
+                        ) : null}
                       </div>
+                    </div>
 
-                      <select value={t.status} onChange={(e) => setTaskStatus(t.id, e.target.value)}>
-                        <option value="todo">todo</option>
-                        <option value="doing">doing</option>
-                        <option value="done">done</option>
-                      </select>
-
-                      <button onClick={() => onDelete(t.id)} style={{ marginLeft: "auto" }}>
-                        Delete
+                    <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {t.status !== "todo" ? <button onClick={() => setTaskStatus(t.id, "todo")}>todo</button> : null}
+                      {t.status !== "doing" ? <button onClick={() => setTaskStatus(t.id, "doing")}>doing</button> : null}
+                      {t.status !== "done" ? <button onClick={() => setTaskStatus(t.id, "done")}>done</button> : null}
+                      <button onClick={() => onDelete(t.id)} style={{ color: "crimson" }}>
+                        delete
                       </button>
                     </div>
-                  </li>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           )}
         </div>
       </div>

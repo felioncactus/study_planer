@@ -6,8 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Frontend calls /api/* -> proxied to backend to avoid CORS in dev
+      // Frontend calls /api/* and /uploads/* -> proxied to backend to avoid CORS in dev
       "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/uploads": {
         target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,

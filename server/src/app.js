@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { apiRouter } from "./routes/index.js";
+import path from "path";
+import fs from "fs";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 function parseOrigins(value) {
@@ -35,7 +37,16 @@ export function createApp() {
   app.use(express.json({ limit: "3mb" }));
 
   app.get("/health", (req, res) => res.json({ ok: true }));
+  // serve uploaded assets (course images/banners)
+  const uploadsDir = (() => {
+    const direct = path.resolve(process.cwd(), "uploads");
+    const nested = path.resolve(process.cwd(), "server", "uploads");
+    if (fs.existsSync(direct)) return direct;
+    if (fs.existsSync(nested)) return nested;
+    return direct;
+  })();
 
+  app.use("/uploads", express.static(uploadsDir));
   app.use("/api", apiRouter);
 
   // error handler last

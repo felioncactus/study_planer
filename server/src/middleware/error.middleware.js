@@ -2,14 +2,17 @@ import { HttpError } from "../utils/httpError.js";
 
 export function errorMiddleware(err, req, res, next) {
   const isHttp = err instanceof HttpError;
+  const isMulter = err?.name === "MulterError" || /Only image uploads/i.test(err?.message || "");
 
-  const status = isHttp ? err.status : 500;
-  const code = isHttp ? err.code : "INTERNAL_SERVER_ERROR";
-  const message =
-    isHttp ? err.message : "Something went wrong. Please try again later.";
+  const status = isHttp ? err.status : isMulter ? 400 : 500;
+  const code = isHttp ? err.code : isMulter ? "UPLOAD_ERROR" : "INTERNAL_SERVER_ERROR";
+  const message = isHttp
+    ? err.message
+    : isMulter
+      ? err.message || "Upload failed"
+      : "Something went wrong. Please try again later.";
 
-  // Keep server console useful while developing:
-  if (!isHttp) {
+  if (!isHttp && !isMulter) {
     console.error(err);
   }
 

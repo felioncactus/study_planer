@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import Tasks from "./pages/Tasks";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";

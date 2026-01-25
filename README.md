@@ -302,7 +302,20 @@ That endpoint is **POST**, not GET. Use the React UI or a REST client.
 - Test server: `http://localhost:5000/api/ping`
 - Ensure the client is using `/api` via the Vite proxy (`VITE_API_BASE_URL=/api`)
 
-### Postgres tools not found (Windows)
+
+### error: invalid input syntax for type smallint: "Tue"
+
+This means your existing database has an older `courses.day_of_week` column stored as a number.
+Run migrations again to auto-fix it:
+
+```bash
+cd server
+npm run migrate
+```
+
+This repo includes a migration that converts `day_of_week` to TEXT so values like `Mon/Tue/...` work.
+
+### Postgres tools not found \(Windows\)
 
 - Install PostgreSQL
 - Add Postgres `bin` folder to PATH
