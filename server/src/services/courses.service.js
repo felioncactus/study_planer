@@ -13,6 +13,11 @@ const emptyToUndefined = (v) => {
   return v;
 };
 
+const emptyToNull = (v) => {
+  if (v === "" || v === null) return null;
+  return v;
+};
+
 const dayEnum = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 
 const timeString = z
@@ -25,17 +30,19 @@ const dateString = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
   .transform((s) => s);
 
+// For updates we want to support clearing optional fields (send "" -> null)
+// and still reject invalid formats. For create, optional fields can be omitted.
 const courseUpsertSchema = z.object({
   name: z.preprocess(emptyToUndefined, z.string().min(1).max(100)),
-  color: z.preprocess(emptyToUndefined, z.string().max(50)).optional(),
-  description: z.preprocess(emptyToUndefined, z.string().max(2000)).optional(),
-  dayOfWeek: z.preprocess(emptyToUndefined, dayEnum).optional(),
-  startTime: z.preprocess(emptyToUndefined, timeString).optional(),
-  endTime: z.preprocess(emptyToUndefined, timeString).optional(),
-  midtermDate: z.preprocess(emptyToUndefined, dateString).optional(),
-  finalDate: z.preprocess(emptyToUndefined, dateString).optional(),
-  imageUrl: z.preprocess(emptyToUndefined, z.string().max(500)).optional(),
-  bannerUrl: z.preprocess(emptyToUndefined, z.string().max(500)).optional(),
+  color: z.preprocess(emptyToNull, z.string().max(50).nullable()).optional(),
+  description: z.preprocess(emptyToNull, z.string().max(2000).nullable()).optional(),
+  dayOfWeek: z.preprocess(emptyToNull, dayEnum.nullable()).optional(),
+  startTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
+  endTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
+  midtermDate: z.preprocess(emptyToNull, dateString.nullable()).optional(),
+  finalDate: z.preprocess(emptyToNull, dateString.nullable()).optional(),
+  imageUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
+  bannerUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
 });
 
 function toNull(v) {
@@ -70,7 +77,6 @@ export async function createCourseForUser(userId, input) {
     throw badRequest("Invalid course payload", "VALIDATION_ERROR");
   }
 
-  // if only one of start/end is provided, still allow; UI can show it.
   try {
     return await createCourse({
       userId,
@@ -94,6 +100,9 @@ export async function createCourseForUser(userId, input) {
 }
 
 export async function updateCourseForUser(userId, courseId, input) {
+  const hasImageUrl = Object.prototype.hasOwnProperty.call(input || {}, "imageUrl") || Object.prototype.hasOwnProperty.call(input || {}, "image_url");
+  const hasBannerUrl = Object.prototype.hasOwnProperty.call(input || {}, "bannerUrl") || Object.prototype.hasOwnProperty.call(input || {}, "banner_url");
+
   const parsed = courseUpsertSchema.safeParse({
     name: input?.name,
     color: input?.color,
@@ -123,8 +132,10 @@ export async function updateCourseForUser(userId, courseId, input) {
       endTime: toNull(parsed.data.endTime),
       midtermDate: toNull(parsed.data.midtermDate),
       finalDate: toNull(parsed.data.finalDate),
-      imageUrl: toNull(parsed.data.imageUrl),
-      bannerUrl: toNull(parsed.data.bannerUrl),
+      imageUrlProvided: hasImageUrl,
+      imageUrl: hasImageUrl ? toNull(parsed.data.imageUrl) : undefined,
+      bannerUrlProvided: hasBannerUrl,
+      bannerUrl: hasBannerUrl ? toNull(parsed.data.bannerUrl) : undefined,
     });
 
     if (!updated) {

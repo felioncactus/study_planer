@@ -15,7 +15,10 @@ function pickUploadedUrls(req) {
   const imageUrl = image ? `/uploads/courses/${image.filename}` : undefined;
   const bannerUrl = banner ? `/uploads/courses/${banner.filename}` : undefined;
 
-  return { imageUrl, bannerUrl };
+  const out = {};
+  if (imageUrl !== undefined) out.imageUrl = imageUrl;
+  if (bannerUrl !== undefined) out.bannerUrl = bannerUrl;
+  return out;
 }
 
 export const listCoursesHandler = asyncHandler(async (req, res) => {
@@ -29,14 +32,14 @@ export const getCourseHandler = asyncHandler(async (req, res) => {
 });
 
 export const createCourseHandler = asyncHandler(async (req, res) => {
-  const { imageUrl, bannerUrl } = pickUploadedUrls(req);
-  const course = await createCourseForUser(req.user.id, { ...req.body, imageUrl, bannerUrl });
+  const uploaded = pickUploadedUrls(req);
+  const course = await createCourseForUser(req.user.id, { ...req.body, ...uploaded });
   res.status(201).json({ course });
 });
 
 export const updateCourseHandler = asyncHandler(async (req, res) => {
-  const { imageUrl, bannerUrl } = pickUploadedUrls(req);
-  const course = await updateCourseForUser(req.user.id, req.params.id, { ...req.body, imageUrl, bannerUrl });
+  const uploaded = pickUploadedUrls(req);
+  const course = await updateCourseForUser(req.user.id, req.params.id, { ...req.body, ...uploaded });
   res.json({ course });
 });
 

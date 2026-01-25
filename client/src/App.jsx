@@ -31,6 +31,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/courses/:id"
+        element={
+          <ProtectedRoute>
+            <CourseDetail />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/tasks"
         element={

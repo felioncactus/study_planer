@@ -181,6 +181,12 @@ Expected output:
 - First time: `✅ Applied: 001_init.sql`
 - Later runs: `✅ No pending migrations.`
 
+### Migration notes
+
+- This update adds a dedicated **Course Detail** page route (`/courses/:id`) and a **Basic settings** editor inside the course page.
+- **No database/schema changes were required**, so there is **no new migration** to run for this change.
+- In general: whenever a new file appears in `server/migrations/`, run `npm run migrate` from `server/` to apply it.
+
 ---
 
 ### 6) Run the app (development)

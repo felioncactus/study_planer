@@ -69,22 +69,25 @@ export async function updateCourse({
   endTime,
   midtermDate,
   finalDate,
+  imageUrlProvided,
   imageUrl,
+  bannerUrlProvided,
   bannerUrl,
 }) {
   const result = await pool.query(
     `UPDATE courses
      SET
-       name = COALESCE($3, name),
-       color = COALESCE($4, color),
-       description = COALESCE($5, description),
-       day_of_week = COALESCE($6, day_of_week),
-       start_time = COALESCE($7, start_time),
-       end_time = COALESCE($8, end_time),
-       midterm_date = COALESCE($9, midterm_date),
-       final_date = COALESCE($10, final_date),
-       image_url = COALESCE($11, image_url),
-       banner_url = COALESCE($12, banner_url)
+       name = $3,
+       color = $4,
+       description = $5,
+       day_of_week = $6,
+       start_time = $7,
+       end_time = $8,
+       midterm_date = $9,
+       final_date = $10,
+       image_url = CASE WHEN $11 THEN $12 ELSE image_url END,
+       banner_url = CASE WHEN $13 THEN $14 ELSE banner_url END,
+       updated_at = NOW()
      WHERE id = $1 AND user_id = $2
      RETURNING ${COURSE_SELECT};`,
     [
@@ -98,7 +101,9 @@ export async function updateCourse({
       endTime ?? null,
       midtermDate ?? null,
       finalDate ?? null,
+      !!imageUrlProvided,
       imageUrl ?? null,
+      !!bannerUrlProvided,
       bannerUrl ?? null,
     ]
   );

@@ -2,6 +2,7 @@
 
 ## High Priority
 
+- [ ] Can not change information via course setting
 - [ ] Fix A.I Assistant to display changes immidiately
 - [ ] Fix an A.I widget to display properly
 - [ ] Responsive and good looking design
