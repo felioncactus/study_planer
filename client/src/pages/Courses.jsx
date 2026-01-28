@@ -16,9 +16,14 @@ function formatTimeRange(start, end) {
   return start ? `${fmtTime(start)}` : `${fmtTime(end)}`;
 }
 
+function fmtDateOnly(d) {
+  if (!d) return "";
+  return String(d).slice(0, 10);
+}
+
 function ymdToLabel(ymd) {
   if (!ymd) return "";
-  return ymd;
+  return String(ymd).slice(0, 10);
 }
 
 export default function Courses() {
@@ -75,8 +80,8 @@ export default function Courses() {
       if (dayOfWeek) fd.append("dayOfWeek", dayOfWeek);
       if (startTime) fd.append("startTime", startTime);
       if (endTime) fd.append("endTime", endTime);
-      if (midtermDate) fd.append("midtermDate", midtermDate);
-      if (finalDate) fd.append("finalDate", finalDate);
+      if (midtermDate) fd.append("midtermDate", fmtDateOnly(midtermDate));
+      if (finalDate) fd.append("finalDate", fmtDateOnly(finalDate));
       if (imageFile) fd.append("image", imageFile);
       if (bannerFile) fd.append("banner", bannerFile);
 

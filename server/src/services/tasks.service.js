@@ -12,11 +12,43 @@ import {
 
 const statusEnum = z.enum(["todo", "doing", "done"]);
 
+// Accept either YYYY-MM-DD or an ISO datetime string and normalize to YYYY-MM-DD.
+function normalizeDateOnly(v) {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  if (v === "") return null;
+
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (s === "") return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+    return s;
+  }
+
+  return v;
+}
+
+function serializeDateOnlyOut(v) {
+  if (v === null || v === undefined || v === "") return v;
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) return v.slice(0, 10);
+  return v;
+}
+
+function serializeTask(task) {
+  if (!task) return task;
+  return { ...task, due_date: serializeDateOnlyOut(task.due_date) };
+}
+
+
 function normalizeBody(input) {
   return {
     title: input.title,
     description: input.description,
-    due_date: input.due_date ?? input.dueDate,
+    due_date: normalizeDateOnly(input.due_date ?? input.dueDate),
     status: input.status,
     course_id: input.course_id ?? input.courseId,
     estimated_minutes: input.estimated_minutes ?? input.estimatedMinutes,
@@ -28,7 +60,7 @@ function normalizeBody(input) {
 const createSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional().nullable(),
-  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  due_date: z.preprocess(normalizeDateOnly, z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().nullable(),
   status: statusEnum.optional().default("todo"),
   course_id: z.string().uuid().optional().nullable(),
   estimated_minutes: z.number().int().min(1).max(24 * 60).optional().default(60),
@@ -40,7 +72,7 @@ const updateSchema = z
   .object({
     title: z.string().min(1).max(200).optional(),
     description: z.string().max(5000).optional().nullable(),
-    due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+    due_date: z.preprocess(normalizeDateOnly, z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().nullable(),
     status: statusEnum.optional(),
     course_id: z.string().uuid().optional().nullable(),
     estimated_minutes: z.number().int().min(1).max(24 * 60).optional(),
@@ -53,8 +85,8 @@ const updateSchema = z
 
 const listSchema = z.object({
   status: statusEnum.optional(),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z.preprocess(normalizeDateOnly, z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+  to: z.preprocess(normalizeDateOnly, z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   courseId: z.string().uuid().optional(),
 });
 
@@ -63,7 +95,8 @@ export async function listTasks(userId, query) {
   if (!parsed.success) {
     throw badRequest("Invalid query parameters", "VALIDATION_ERROR");
   }
-  return await listTasksByUserId(userId, parsed.data);
+  const rows = await listTasksByUserId(userId, parsed.data);
+  return rows.map(serializeTask);
 }
 
 export async function createTaskForUser(userId, body) {
@@ -82,7 +115,7 @@ export async function createTaskForUser(userId, body) {
     }
   }
 
-  return await createTask({
+  const created = await createTask({
     userId,
     courseId: course_id ?? null,
     title: title.trim(),
@@ -93,6 +126,8 @@ export async function createTaskForUser(userId, body) {
     priority,
     splittable,
   });
+
+  return serializeTask(created);
 }
 
 export async function updateTaskForUser(userId, taskId, body) {
@@ -136,7 +171,7 @@ export async function updateTaskForUser(userId, taskId, body) {
       status: status ?? undefined,
     });
 
-    return updated2 || updated;
+    return serializeTask(updated2 || updated);
   }
 
   const updated = await updateTask({
@@ -166,7 +201,7 @@ export async function updateTaskForUser(userId, taskId, body) {
     throw notFound("Task not found", "TASK_NOT_FOUND");
   }
 
-  return updated;
+  return serializeTask(updated);
 }
 
 export async function deleteTaskForUser(userId, taskId) {

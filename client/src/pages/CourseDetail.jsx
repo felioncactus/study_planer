@@ -11,6 +11,11 @@ function fmtTime(t) {
   return String(t).slice(0, 5);
 }
 
+function fmtDateOnly(d) {
+  if (!d) return "";
+  return String(d).slice(0, 10);
+}
+
 function formatTimeRange(start, end) {
   if (!start && !end) return "";
   if (start && end) return `${fmtTime(start)}–${fmtTime(end)}`;
@@ -112,8 +117,8 @@ export default function CourseDetail() {
     setDayOfWeek(course.day_of_week || "");
     setStartTime(fmtTime(course.start_time));
     setEndTime(fmtTime(course.end_time));
-    setMidtermDate(course.midterm_date || "");
-    setFinalDate(course.final_date || "");
+    setMidtermDate(fmtDateOnly(course.midterm_date));
+    setFinalDate(fmtDateOnly(course.final_date));
     setImageFile(null);
     setBannerFile(null);
     setRemoveImage(false);
@@ -140,8 +145,8 @@ export default function CourseDetail() {
       fd.append("dayOfWeek", dayOfWeek || "");
       fd.append("startTime", startTime || "");
       fd.append("endTime", endTime || "");
-      fd.append("midtermDate", midtermDate || "");
-      fd.append("finalDate", finalDate || "");
+      fd.append("midtermDate", fmtDateOnly(midtermDate) || "");
+      fd.append("finalDate", fmtDateOnly(finalDate) || "");
 
       if (imageFile) {
         fd.append("image", imageFile);

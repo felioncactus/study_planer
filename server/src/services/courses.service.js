@@ -18,6 +18,42 @@ const emptyToNull = (v) => {
   return v;
 };
 
+// Accept either YYYY-MM-DD or an ISO datetime string and normalize to YYYY-MM-DD.
+// Also supports Date objects. Empty string becomes null (to clear the field).
+function normalizeDateOnly(v) {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  if (v === "") return null;
+
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (s === "") return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+    return s; // let validation handle it
+  }
+
+  return v;
+}
+
+function serializeDateOnlyOut(v) {
+  if (v === null || v === undefined || v === "") return v;
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) return v.slice(0, 10);
+  return v;
+}
+
+function serializeCourse(course) {
+  if (!course) return course;
+  return {
+    ...course,
+    midterm_date: serializeDateOnlyOut(course.midterm_date),
+    final_date: serializeDateOnlyOut(course.final_date),
+  };
+}
+
 const dayEnum = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 
 const timeString = z
@@ -39,8 +75,8 @@ const courseUpsertSchema = z.object({
   dayOfWeek: z.preprocess(emptyToNull, dayEnum.nullable()).optional(),
   startTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
   endTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
-  midtermDate: z.preprocess(emptyToNull, dateString.nullable()).optional(),
-  finalDate: z.preprocess(emptyToNull, dateString.nullable()).optional(),
+  midtermDate: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
+  finalDate: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
   imageUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
   bannerUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
 });
@@ -50,13 +86,14 @@ function toNull(v) {
 }
 
 export async function listCourses(userId) {
-  return await listCoursesByUserId(userId);
+  const rows = await listCoursesByUserId(userId);
+  return rows.map(serializeCourse);
 }
 
 export async function getCourseForUser(userId, courseId) {
   const course = await getCourseByIdForUser({ userId, courseId });
   if (!course) throw notFound("Course not found", "COURSE_NOT_FOUND");
-  return course;
+  return serializeCourse(course);
 }
 
 export async function createCourseForUser(userId, input) {
@@ -78,7 +115,7 @@ export async function createCourseForUser(userId, input) {
   }
 
   try {
-    return await createCourse({
+    const created = await createCourse({
       userId,
       name: parsed.data.name.trim(),
       color: toNull(parsed.data.color),
@@ -91,6 +128,8 @@ export async function createCourseForUser(userId, input) {
       imageUrl: toNull(parsed.data.imageUrl),
       bannerUrl: toNull(parsed.data.bannerUrl),
     });
+
+    return serializeCourse(created);
   } catch (err) {
     if (err && err.code === "23505") {
       throw conflict("Course name already exists", "COURSE_NAME_TAKEN");
@@ -142,7 +181,7 @@ export async function updateCourseForUser(userId, courseId, input) {
       throw notFound("Course not found", "COURSE_NOT_FOUND");
     }
 
-    return updated;
+    return serializeCourse(updated);
   } catch (err) {
     if (err && err.code === "23505") {
       throw conflict("Course name already exists", "COURSE_NAME_TAKEN");
