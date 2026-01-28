@@ -36,3 +36,13 @@ coverage/
 .vscode/
 .idea/
 *.swp
+
+# Runtime uploads (user-generated media)
+# (Keep the folder with a .gitkeep if you want)
+uploads/*
+server/uploads/*
+**/uploads/*
+
+!uploads/.gitkeep
+!server/uploads/.gitkeep
+!**/uploads/.gitkeep
