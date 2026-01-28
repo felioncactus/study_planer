@@ -2,13 +2,13 @@
 
 ## High Priority
 
-- [ ] Can not change information via course setting
 - [ ] Fix A.I Assistant to display changes immidiately
 - [ ] Fix an A.I widget to display properly
 - [ ] Responsive and good looking design
 
 ## Medium Priority
 
+- [ ] Delete all image files form repo
 - [ ] Notifications
 - [ ] Timers and other utilities.
 
@@ -21,6 +21,7 @@
 
 - [x] AI and our poject (HOW?)
 - [x] Communication with ohter users? (Freinds)
+- [x] Can not change information via course setting
 
 ---
 
