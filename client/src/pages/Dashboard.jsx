@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
@@ -26,12 +26,19 @@ function startOfWeekMonday(d) {
   return date;
 }
 
-function Card({ title, value, hint }) {
+function StatCard({ label, value, hint }) {
   return (
-    <div className="card">
-      <div style={{ fontSize: 13, color: "#555" }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, marginTop: 6 }}>{value}</div>
-      {hint ? <div style={{ fontSize: 12, color: "#777", marginTop: 6 }}>{hint}</div> : null}
+    <div className="card stat lift col-3">
+      <div className="stat-top">
+        <div className="stat-label">{label}</div>
+        {hint ? (
+          <div className="kpi">
+            <span className="kpi-dot" />
+            {hint}
+          </div>
+        ) : null}
+      </div>
+      <div className="stat-value">{value}</div>
     </div>
   );
 }
@@ -51,10 +58,11 @@ export default function Dashboard() {
       try {
         const [s, c] = await Promise.all([apiTaskSummary(), apiListCourses()]);
         if (cancelled) return;
+
         setSummary(s.summary);
         setCourses(c.courses || []);
 
-        // also fetch tasks due this week to display a small preview list
+        // fetch tasks due this week for preview list
         const start = startOfWeekMonday(new Date());
         const end = new Date(start);
         end.setDate(end.getDate() + 6);
@@ -62,8 +70,7 @@ export default function Dashboard() {
         const t = await apiListTasks({ from: toYmd(start), to: toYmd(end) });
         if (cancelled) return;
 
-        // show only not-done tasks in the preview
-        setWeekTasks(t.tasks.filter((x) => x.status !== "done"));
+        setWeekTasks((t.tasks || []).filter((x) => x.status !== "done"));
       } catch (err) {
         if (cancelled) return;
         setError(err?.response?.data?.error?.message || "Failed to load dashboard");
@@ -76,124 +83,195 @@ export default function Dashboard() {
     };
   }, []);
 
+  const topCourses = useMemo(() => courses.slice(0, 6), [courses]);
+
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 900, margin: "24px auto", padding: 16 }}>
-        <h2>Dashboard</h2>
-        <p>
-          Logged in as: <b>{user?.email}</b>
-        </p>
-
-        {error && <div style={{ color: "crimson", marginBottom: 12 }}>{error}</div>}
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 14 }}>
-          <Card title="Overdue" value={summary ? summary.overdue : "…"} hint="Not done + past due date" />
-          <Card title="Due today" value={summary ? summary.due_today : "…"} hint="Not done + due date = today" />
-          <Card title="Due this week" value={summary ? summary.due_this_week : "…"} hint="Mon–Sun" />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 12 }}>
-          <Card title="Open tasks" value={summary ? summary.open_total : "…"} />
-          <Card title="Todo" value={summary ? summary.todo : "…"} />
-          <Card title="Doing" value={summary ? summary.doing : "…"} />
-          <Card title="Done" value={summary ? summary.done : "…"} />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
-          <div className="card">
-            <h3 style={{ marginTop: 0 }}>Quick actions</h3>
-            <ul>
-              <li><Link to="/courses">Create courses</Link> (CS101, Math, …)</li>
-              <li><Link to="/tasks">Create tasks</Link> (assign due dates)</li>
-              <li><Link to="/week">Weekly view</Link></li>
-            </ul>
+      <div className="container bg-texture reveal">
+        <div className="page-header">
+          <div>
+            <div className="title">Dashboard</div>
+            <div className="muted small">
+              Logged in as <b>{user?.email}</b>
+            </div>
           </div>
 
+          <div className="row">
+            <Link className="btn btn-ghost" to="/week">
+              Weekly
+            </Link>
+            <Link className="btn btn-primary" to="/tasks">
+              Quick Add
+            </Link>
+          </div>
+        </div>
 
-          <div className="card">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <h3 style={{ marginTop: 0, marginBottom: 0 }}>Your courses</h3>
-              <Link to="/courses" style={{ fontSize: 13 }}>Manage →</Link>
+        {error ? (
+          <div className="card" style={{ borderColor: "rgba(255,77,79,.35)" }}>
+            <div style={{ color: "var(--danger)" }}>{error}</div>
+          </div>
+        ) : null}
+
+        {/* Overview */}
+        <div className="grid-12" style={{ marginTop: 12 }}>
+          <StatCard label="Overdue" value={summary ? summary.overdue : "…"} hint="past due" />
+          <StatCard label="Due today" value={summary ? summary.due_today : "…"} hint="today" />
+          <StatCard label="Due this week" value={summary ? summary.due_this_week : "…"} hint="Mon–Sun" />
+          <StatCard label="Open tasks" value={summary ? summary.open_total : "…"} hint="not done" />
+        </div>
+
+        <div className="section">
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Up next</h2>
+              <div className="section-sub">Tasks due this week (not done)</div>
             </div>
 
-            {courses.length === 0 ? (
-              <div style={{ marginTop: 10, color: "#666" }}>No courses yet.</div>
-            ) : (
-              <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-                {courses.slice(0, 6).map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/courses/${c.id}`}
-                    style={{
-                      textDecoration: "none",
-                      color: "inherit",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 16,
-                      overflow: "hidden",
-                      display: "block",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: 70,
-                        backgroundImage: c.banner_url ? `url(${c.banner_url})` : "none",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        backgroundColor: c.banner_url ? undefined : "#f3f4f6",
-                      }}
-                    />
-                    <div style={{ padding: 12, display: "flex", gap: 10, alignItems: "center" }}>
-                      <div
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 14,
-                          overflow: "hidden",
-                          background: c.color || "#e5e7eb",
-                          display: "grid",
-                          placeItems: "center",
-                          flex: "0 0 auto",
-                        }}
-                      >
-                        {c.image_url ? (
-                          <img src={c.image_url} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <span style={{ fontWeight: 900 }}>{(c.name || "?").slice(0, 2).toUpperCase()}</span>
-                        )}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 900, color: "#111" }}>{c.name}</div>
-                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
-                          {c.day_of_week ? `${c.day_of_week} ` : ""}
-                          {c.start_time || c.end_time ? `${c.start_time || ""}${c.start_time && c.end_time ? "–" : ""}${c.end_time || ""}` : ""}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <div className="chips">
+              <span className="chip">This week</span>
+              <span className="chip">Priority</span>
+            </div>
           </div>
 
-          <div className="card">
-            <h3 style={{ marginTop: 0 }}>This week (not done)</h3>
-            {weekTasks.length === 0 ? (
-              <div>No upcoming tasks due this week.</div>
-            ) : (
-              <ul style={{ paddingLeft: 18 }}>
-                {weekTasks.slice(0, 8).map((t) => (
-                  <li key={t.id} style={{ marginBottom: 8 }}>
-                    <b>{t.title}</b>{" "}
-                    <span style={{ color: "#555" }}>
-                      ({t.status}) {t.due_date ? `• due ${t.due_date}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div style={{ marginTop: 10 }}>
-              <Link to="/tasks">Go to Tasks →</Link>
+          <div className="grid-12">
+            {/* Left: upcoming tasks */}
+            <div className="card lift col-8 accent-edge">
+              {weekTasks.length === 0 ? (
+                <div className="empty">
+                  <div className="empty-title">Nothing due this week 🎉</div>
+                  <div className="empty-sub">
+                    Add a task (or set due dates) so your dashboard stays helpful.
+                  </div>
+                  <div className="row">
+                    <Link className="btn btn-primary" to="/tasks">
+                      Add task
+                    </Link>
+                    <Link className="btn btn-ghost" to="/courses">
+                      Manage courses
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="list">
+                  {weekTasks.slice(0, 6).map((t) => (
+                    <div key={t.id} className="row-item lift">
+                      <div className="row-left">
+                        <div className="row-title">{t.title}</div>
+                        <div className="row-meta">
+                          {t.due_date ? `Due ${t.due_date}` : "No due date"}{" "}
+                          {t.status ? `• ${t.status}` : ""}
+                        </div>
+                      </div>
+                      <Link className="btn btn-ghost" to="/tasks">
+                        Open
+                      </Link>
+                    </div>
+                  ))}
+                  <div className="row" style={{ justifyContent: "flex-end" }}>
+                    <Link to="/tasks" className="btn btn-ghost">
+                      Go to Tasks →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: courses */}
+            <div className="card lift col-4">
+              <div className="section-sub">Your courses</div>
+
+              {topCourses.length === 0 ? (
+                <div className="empty" style={{ marginTop: 10 }}>
+                  <div className="empty-title">No courses yet</div>
+                  <div className="empty-sub">Create a course to start organizing tasks and schedules.</div>
+                  <Link className="btn btn-primary" to="/courses">
+                    Create course
+                  </Link>
+                </div>
+              ) : (
+                <div className="list" style={{ marginTop: 10 }}>
+                  {topCourses.map((c) => (
+                    <Link
+                      key={c.id}
+                      to={`/courses/${c.id}`}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      <div className="row-item lift">
+                        <div className="row-left" style={{ minWidth: 0 }}>
+                          <div className="row-title" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <span
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: 999,
+                                background: c.color || "rgba(124,124,255,.55)",
+                                flex: "0 0 auto",
+                              }}
+                            />
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {c.name}
+                            </span>
+                          </div>
+                          <div className="row-meta">
+                            {c.day_of_week ? `${c.day_of_week}` : "No day"}{" "}
+                            {c.start_time || c.end_time
+                              ? `• ${fmtTime(c.start_time)}${c.start_time && c.end_time ? "–" : ""}${fmtTime(c.end_time)}`
+                              : ""}
+                          </div>
+                        </div>
+                        <span className="muted small">→</span>
+                      </div>
+                    </Link>
+                  ))}
+
+                  <div className="row" style={{ justifyContent: "flex-end" }}>
+                    <Link to="/courses" className="btn btn-ghost">
+                      Manage →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="section">
+          <div className="section-head">
+            <h2 className="section-title">Quick actions</h2>
+            <div className="section-sub">Common stuff you’ll do a lot</div>
+          </div>
+
+          <div className="grid-12">
+            <div className="card lift col-4">
+              <div className="row-title">Create courses</div>
+              <div className="row-meta">Set days/times, add a color, optional banner</div>
+              <div style={{ marginTop: 10 }}>
+                <Link className="btn btn-primary" to="/courses">
+                  Go to Courses
+                </Link>
+              </div>
+            </div>
+
+            <div className="card lift col-4">
+              <div className="row-title">Add tasks</div>
+              <div className="row-meta">Due date + status makes your dashboard useful</div>
+              <div style={{ marginTop: 10 }}>
+                <Link className="btn btn-primary" to="/tasks">
+                  Go to Tasks
+                </Link>
+              </div>
+            </div>
+
+            <div className="card lift col-4">
+              <div className="row-title">Weekly plan</div>
+              <div className="row-meta">See the week and plan study blocks</div>
+              <div style={{ marginTop: 10 }}>
+                <Link className="btn btn-primary" to="/week">
+                  Open Weekly
+                </Link>
+              </div>
             </div>
           </div>
         </div>

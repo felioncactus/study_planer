@@ -3,6 +3,15 @@ import Navbar from "../components/Navbar";
 import { apiListCourses } from "../api/courses.api";
 import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask } from "../api/tasks.api";
 import { useLocation, Link } from "react-router-dom";
+<div className="card lift">
+  <div className="quickbar">
+    <input className="input" placeholder='Quick add: "Math HW due Fri 6pm 45m"' />
+    <button className="btn btn-primary">Add</button>
+  </div>
+  <div className="muted small" style={{ marginTop: 8 }}>
+    Tip: keep it short — you can edit details later.
+  </div>
+</div>
 
 export default function Tasks() {
   const location = useLocation();
