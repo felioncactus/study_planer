@@ -4,6 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { apiTaskSummary, apiListTasks } from "../api/tasks.api";
 import { apiListCourses } from "../api/courses.api";
+import { apiListCalendarEvents } from "../api/calendar.api";
+import CalendarWidget, { calendarVisibleRange } from "../components/CalendarWidget";
 
 function toYmd(date) {
   const yyyy = date.getFullYear();
@@ -48,6 +50,9 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [courses, setCourses] = useState([]);
   const [weekTasks, setWeekTasks] = useState([]);
+  const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -56,11 +61,18 @@ export default function Dashboard() {
     async function load() {
       setError("");
       try {
-        const [s, c] = await Promise.all([apiTaskSummary(), apiListCourses()]);
+        const { gridStart, gridEnd } = calendarVisibleRange(new Date());
+        const [s, c, cal] = await Promise.all([
+          apiTaskSummary(),
+          apiListCourses(),
+          apiListCalendarEvents({ start: toYmd(gridStart), end: toYmd(gridEnd) }),
+        ]);
         if (cancelled) return;
 
         setSummary(s.summary);
         setCourses(c.courses || []);
+        setCalendarEvents(cal.events || []);
+        setCalendarLoading(false);
 
         // fetch tasks due this week for preview list
         const start = startOfWeekMonday(new Date());
@@ -73,6 +85,7 @@ export default function Dashboard() {
         setWeekTasks((t.tasks || []).filter((x) => x.status !== "done"));
       } catch (err) {
         if (cancelled) return;
+        setCalendarLoading(false);
         setError(err?.response?.data?.error?.message || "Failed to load dashboard");
       }
     }
@@ -82,8 +95,43 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCalendar() {
+      setCalendarLoading(true);
+      try {
+        const { gridStart, gridEnd } = calendarVisibleRange(calendarAnchor);
+        const cal = await apiListCalendarEvents({ start: toYmd(gridStart), end: toYmd(gridEnd) });
+        if (cancelled) return;
+        setCalendarEvents(cal.events || []);
+      } catch (err) {
+        // non-fatal; dashboard still works
+      } finally {
+        if (!cancelled) setCalendarLoading(false);
+      }
+    }
+
+    loadCalendar();
+    return () => {
+      cancelled = true;
+    };
+  }, [calendarAnchor]);
+
 
   const topCourses = useMemo(() => courses.slice(0, 6), [courses]);
+
+  function prevMonth() {
+    const d = new Date(calendarAnchor);
+    d.setMonth(d.getMonth() - 1);
+    setCalendarAnchor(d);
+  }
+
+  function nextMonth() {
+    const d = new Date(calendarAnchor);
+    d.setMonth(d.getMonth() + 1);
+    setCalendarAnchor(d);
+  }
 
   return (
     <>
@@ -275,6 +323,25 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        <div className="section">
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Schedule</h2>
+              <div className="section-sub">Courses + tasks in one place</div>
+            </div>
+          </div>
+
+          <div className="card lift">
+            <CalendarWidget
+              anchor={calendarAnchor}
+              events={calendarEvents}
+              loading={calendarLoading}
+              onPrevMonth={prevMonth}
+              onNextMonth={nextMonth}
+            />
+          </div>
+        </div>
+
       </div>
     </>
   );

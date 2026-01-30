@@ -7,6 +7,7 @@ import { assistantRouter } from "./assistant.routes.js";
 import { friendsRouter } from "./friends.routes.js";
 import { messagesRouter } from "./messages.routes.js";
 import { notificationsRouter } from "./notifications.routes.js";
+import { calendarRouter } from "./calendar.routes.js";
 
 export const apiRouter = Router();
 
@@ -18,6 +19,8 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/courses", coursesRouter);
 apiRouter.use("/tasks", tasksRouter);
+
+apiRouter.use("/calendar", calendarRouter);
 
 apiRouter.use("/friends", friendsRouter);
 apiRouter.use("/messages", messagesRouter);
