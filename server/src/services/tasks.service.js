@@ -4,6 +4,7 @@ import {
   courseExistsForUser,
   createTask,
   deleteTask,
+  getTaskByIdForUser,
   listTasksByUserId,
   setTaskCourseId,
   updateTask,
@@ -97,6 +98,12 @@ export async function listTasks(userId, query) {
   }
   const rows = await listTasksByUserId(userId, parsed.data);
   return rows.map(serializeTask);
+}
+
+export async function getTaskForUser(userId, taskId) {
+  const row = await getTaskByIdForUser({ userId, taskId });
+  if (!row) throw notFound("Task not found", "TASK_NOT_FOUND");
+  return serializeTask(row);
 }
 
 export async function createTaskForUser(userId, body) {

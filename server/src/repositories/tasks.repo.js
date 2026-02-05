@@ -11,6 +11,18 @@ export async function courseExistsForUser({ courseId, userId }) {
   return result.rowCount > 0;
 }
 
+
+export async function getTaskByIdForUser({ userId, taskId }) {
+  const result = await pool.query(
+    `SELECT id, user_id, course_id, title, description, due_date, status, estimated_minutes, priority, splittable, created_at, updated_at
+     FROM tasks
+     WHERE id = $1 AND user_id = $2
+     LIMIT 1;`,
+    [taskId, userId]
+  );
+  return result.rows[0] || null;
+}
+
 export async function listTasksByUserId(userId, filters) {
   const where = ["user_id = $1"];
   const values = [userId];

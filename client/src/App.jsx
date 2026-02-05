@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import Tasks from "./pages/Tasks";
+import TaskDetail from "./pages/TaskDetail";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
 import Friends from "./pages/Friends";
@@ -20,6 +21,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks/:id"
+        element={
+          <ProtectedRoute>
+            <TaskDetail />
           </ProtectedRoute>
         }
       />

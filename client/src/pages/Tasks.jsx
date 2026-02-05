@@ -1,18 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import { apiListCourses } from "../api/courses.api";
-import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask } from "../api/tasks.api";
+import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask, apiUploadTaskAttachments } from "../api/tasks.api";
 import { useLocation, Link } from "react-router-dom";
-<div className="card lift">
-  <div className="quickbar">
-    <input className="input" placeholder='Quick add: "Math HW due Fri 6pm 45m"' />
-    <button className="btn btn-primary">Add</button>
-  </div>
-  <div className="muted small" style={{ marginTop: 8 }}>
-    Tip: keep it short — you can edit details later.
-  </div>
-</div>
-
 export default function Tasks() {
   const location = useLocation();
 
@@ -20,6 +10,9 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([]);
 
   const [title, setTitle] = useState("Homework 1");
+  const [description, setDescription] = useState("");
+  const [newFiles, setNewFiles] = useState([]);
+  const fileInputRef = useRef(null);
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("todo");
   const [courseId, setCourseId] = useState("");
@@ -72,13 +65,28 @@ export default function Tasks() {
     setError("");
     try {
       const payload = { title, status };
+      if (description.trim()) payload.description = description.trim();
       if (dueDate) payload.dueDate = dueDate;
       if (courseId) payload.courseId = courseId;
 
       const data = await apiCreateTask(payload);
+
+      // If user selected attachments, upload them after the task is created.
+      if (newFiles.length) {
+        try {
+          await apiUploadTaskAttachments(data.task.id, newFiles);
+        } catch (uploadErr) {
+          // keep task, but surface upload failure
+          throw uploadErr;
+        }
+      }
+
       setTasks((prev) => [data.task, ...prev]);
 
       setTitle("");
+      setDescription("");
+      setNewFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setDueDate("");
       setStatus("todo");
       setCourseId("");
@@ -125,6 +133,32 @@ export default function Tasks() {
               Title
               <input value={title} onChange={(e) => setTitle(e.target.value)} style={{ width: "100%" }} />
             </label>
+
+<label style={{ display: "grid", gap: 6 }}>
+  Description (optional)
+  <textarea
+    value={description}
+    onChange={(e) => setDescription(e.target.value)}
+    rows={5}
+    placeholder="Add details, links, notes..."
+    style={{ width: "100%", resize: "vertical" }}
+  />
+</label>
+
+<label style={{ display: "grid", gap: 6 }}>
+  Attachments (optional)
+  <input
+    ref={fileInputRef}
+    type="file"
+    multiple
+    onChange={(e) => setNewFiles(Array.from(e.target.files || []))}
+  />
+  {newFiles.length ? (
+    <div style={{ fontSize: 12, color: "#6b7280" }}>
+      Selected: {newFiles.map((f) => f.name).join(", ")}
+    </div>
+  ) : null}
+</label>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               <label style={{ display: "grid", gap: 6 }}>
@@ -212,7 +246,7 @@ export default function Tasks() {
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: "#111" }}>{t.title}</div>
+                      <div style={{ fontWeight: 800, color: "#111" }}><Link to={`/tasks/${t.id}`} style={{ color: "inherit", textDecoration: "none" }}>{t.title}</Link></div>
                       <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
                         {t.due_date ? `Due: ${t.due_date} • ` : ""}
                         Status: {t.status}
