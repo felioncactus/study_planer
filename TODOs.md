@@ -8,7 +8,6 @@
 
 ## Medium Priority
 
-- [ ] Delete all image files form repo
 - [ ] Notifications
 - [ ] Timers and other utilities.
 
@@ -22,6 +21,7 @@
 - [x] AI and our poject (HOW?)
 - [x] Communication with ohter users? (Freinds)
 - [x] Can not change information via course setting
+- [x] Delete all image files form repo
 
 ---
 
