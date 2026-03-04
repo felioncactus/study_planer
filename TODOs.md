@@ -28,3 +28,5 @@
 ### Notes
 
 Add any additional context or details here.
+What if we do horizontal scroll instead of vertical?
+Add ability to see in what class our friends is currently in
