@@ -5,6 +5,7 @@
 - [ ] Fix A.I Assistant to display changes immidiately
 - [ ] Fix an A.I widget to display properly
 - [ ] Responsive and good looking design
+- [ ] Write a script that will run both server and client side with just one scirpt
 
 ## Medium Priority
 
@@ -13,7 +14,6 @@
 
 ## Low Priority
 
-- [ ] Put some task here
 - [ ] fix widget AI bot
 
 ## Completed
