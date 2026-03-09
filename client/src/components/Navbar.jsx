@@ -58,6 +58,9 @@ export default function Navbar() {
               <NavLink to="/tasks" className={linkClass}>
                 Tasks
               </NavLink>
+              <NavLink to="/activities" className={linkClass}>
+                Activities
+              </NavLink>
               <NavLink to="/week" className={linkClass}>
                 Weekly
               </NavLink>

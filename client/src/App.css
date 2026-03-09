@@ -577,3 +577,60 @@ html[data-theme="light"] .empty {
 .cal-hint {
   padding-left: 2px;
 }
+
+
+/* Task planner modal */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 16px;
+  z-index: 50;
+}
+.modal-card{
+  width: min(980px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.3);
+}
+.planner-grid{
+  display:grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 820px){
+  .planner-grid{ grid-template-columns: 1fr; }
+}
+.planner-weekdays{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.planner-days{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.planner-day{
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 0;
+  background: var(--card);
+}
+.planner-day.green{ background: rgba(0, 200, 120, .18); }
+.planner-day.yellow{ background: rgba(255, 200, 0, .18); }
+.planner-day.red{ background: rgba(255, 80, 80, .18); }
+.planner-slots{
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--card);
+}

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
+import TaskPlannerModal from "../components/TaskPlannerModal";
 import { apiListCourses } from "../api/courses.api";
-import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask, apiUploadTaskAttachments } from "../api/tasks.api";
+import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask, apiUploadTaskAttachments, apiTaskSuggestions } from "../api/tasks.api";
 import { useLocation, Link } from "react-router-dom";
 export default function Tasks() {
   const location = useLocation();
@@ -16,6 +17,16 @@ export default function Tasks() {
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("todo");
   const [courseId, setCourseId] = useState("");
+
+  const [estimatedMinutes, setEstimatedMinutes] = useState(60);
+  const [priority, setPriority] = useState(3);
+  const [splittable, setSplittable] = useState(true);
+
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerStudyWindow, setPlannerStudyWindow] = useState({ start: "18:00", end: "22:00" });
+  const [plannerLoading, setPlannerLoading] = useState(false);
+  const [plannerData, setPlannerData] = useState(null);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCourseId, setFilterCourseId] = useState("");
@@ -60,14 +71,42 @@ export default function Tasks() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, filterCourseId]);
 
-  async function onCreate(e) {
+    async function onCreate(e) {
     e.preventDefault();
     setError("");
+
+    const payload = { title, status, estimatedMinutes: Number(estimatedMinutes) || 60, priority: Number(priority) || 3, splittable: !!splittable };
+    if (description.trim()) payload.description = description.trim();
+    if (dueDate) payload.dueDate = dueDate;
+    if (courseId) payload.courseId = courseId;
+
+    setPendingPayload(payload);
+
+    setPlannerLoading(true);
     try {
-      const payload = { title, status };
-      if (description.trim()) payload.description = description.trim();
-      if (dueDate) payload.dueDate = dueDate;
-      if (courseId) payload.courseId = courseId;
+      const d = await apiTaskSuggestions({
+        dueDate: payload.dueDate || null,
+        estimatedMinutes: payload.estimatedMinutes,
+        studyWindow: plannerStudyWindow,
+      });
+      setPlannerData(d.suggestions);
+      if (d?.suggestions?.studyWindow) setPlannerStudyWindow(d.suggestions.studyWindow);
+      setPlannerOpen(true);
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || "Failed to load planner");
+    } finally {
+      setPlannerLoading(false);
+    }
+  }
+
+  async function createTaskWithPickedSlot(picked) {
+    setError("");
+    try {
+      const payload = { ...(pendingPayload || {}) };
+      if (picked?.start && picked?.end) {
+        payload.plannedStartAt = picked.start;
+        payload.plannedEndAt = picked.end;
+      }
 
       const data = await apiCreateTask(payload);
 
@@ -75,33 +114,30 @@ export default function Tasks() {
       if (newFiles.length) {
         try {
           await apiUploadTaskAttachments(data.task.id, newFiles);
-        } catch (uploadErr) {
-          // keep task, but surface upload failure
-          throw uploadErr;
+        } catch {
+          // ignore attachment errors (task already created)
         }
       }
 
-      setTasks((prev) => [data.task, ...prev]);
+      setPlannerOpen(false);
+      setPlannerData(null);
+      setPendingPayload(null);
 
-      setTitle("");
+      // reset form
+      setTitle("Homework 1");
       setDescription("");
-      setNewFiles([]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       setDueDate("");
       setStatus("todo");
       setCourseId("");
+      setEstimatedMinutes(60);
+      setPriority(3);
+      setSplittable(true);
+      setNewFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      await refresh();
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to create task");
-    }
-  }
-
-  async function setTaskStatus(taskId, newStatus) {
-    setError("");
-    try {
-      const data = await apiUpdateTask(taskId, { status: newStatus });
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? data.task : t)));
-    } catch (err) {
-      setError(err?.response?.data?.error?.message || "Failed to update task");
     }
   }
 
@@ -187,6 +223,34 @@ export default function Tasks() {
                 </select>
               </label>
             </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                Estimated minutes
+                <input
+                  type="number"
+                  min="1"
+                  max="1440"
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(e.target.value)}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                Priority (1–5)
+                <input type="number" min="1" max="5" value={priority} onChange={(e) => setPriority(e.target.value)} />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                Splittable
+                <select value={splittable ? "yes" : "no"} onChange={(e) => setSplittable(e.target.value === "yes")}>
+                  <option value="yes">yes</option>
+                  <option value="no">no</option>
+                </select>
+              </label>
+            </div>
+
+            {plannerLoading ? <div className="small muted">Loading planner…</div> : null}
 
             <button type="submit" disabled={!title.trim()}>
               Create
@@ -274,6 +338,35 @@ export default function Tasks() {
           )}
         </div>
       </div>
+
+      <TaskPlannerModal
+        open={plannerOpen}
+        suggestions={plannerData}
+        loading={plannerLoading}
+        currentStudyWindow={plannerStudyWindow}
+        onStudyWindowChange={async (win) => {
+          setPlannerStudyWindow(win);
+          setPlannerLoading(true);
+          setError("");
+          try {
+            const d = await apiTaskSuggestions({
+              dueDate: (pendingPayload?.dueDate ?? dueDate) || null,
+              estimatedMinutes: Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) || 60,
+              studyWindow: win,
+            });
+            setPlannerData(d.suggestions);
+          } catch (err) {
+            setError(err?.response?.data?.error?.message || "Failed to update planner");
+          } finally {
+            setPlannerLoading(false);
+          }
+        }}
+        onClose={() => {
+          setPlannerOpen(false);
+          setPlannerData(null);
+        }}
+        onConfirm={createTaskWithPickedSlot}
+      />
     </>
   );
 }

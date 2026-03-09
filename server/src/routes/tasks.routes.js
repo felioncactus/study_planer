@@ -8,6 +8,7 @@ import {
   updateTaskHandler,
   deleteTaskHandler,
   tasksSummaryHandler,
+  taskSuggestionsHandler,
   addTaskAttachmentsHandler,
   listTaskAttachmentsHandler,
   deleteTaskAttachmentHandler,
@@ -18,6 +19,9 @@ export const tasksRouter = Router();
 tasksRouter.use(requireAuth);
 
 tasksRouter.get("/summary", tasksSummaryHandler);
+
+// Draft task scheduling suggestions (calendar heatmap + best slots)
+tasksRouter.post("/suggestions", taskSuggestionsHandler);
 
 tasksRouter.get("/", listTasksHandler);
 tasksRouter.get("/:id", getTaskHandler);

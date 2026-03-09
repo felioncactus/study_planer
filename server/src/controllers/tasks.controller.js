@@ -6,6 +6,7 @@ import {
   getTaskForUser,
   updateTaskForUser,
   getSummaryForUser,
+  getTaskSuggestionsForUser,
 } from "../services/tasks.service.js";
 import {
   addAttachmentsToTask,
@@ -41,6 +42,11 @@ export const deleteTaskHandler = asyncHandler(async (req, res) => {
 export const tasksSummaryHandler = asyncHandler(async (req, res) => {
   const summary = await getSummaryForUser(req.user.id);
   res.json({ summary });
+});
+
+export const taskSuggestionsHandler = asyncHandler(async (req, res) => {
+  const suggestions = await getTaskSuggestionsForUser(req.user.id, req.body);
+  res.json({ suggestions });
 });
 
 export const addTaskAttachmentsHandler = asyncHandler(async (req, res) => {

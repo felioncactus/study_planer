@@ -53,7 +53,11 @@ function shortType(ev) {
   if (ev.type === "task") return "Task";
   if (ev.type === "course") return "Course";
   if (ev.type === "exam") return "Exam";
-  if (ev.type === "block") return "Block";
+  if (ev.type === "block") {
+    if (ev?.meta?.blockType === "activity") return "Activity";
+    if (ev?.meta?.blockType === "task") return "Planned Task";
+    return "Block";
+  }
   return "Event";
 }
 

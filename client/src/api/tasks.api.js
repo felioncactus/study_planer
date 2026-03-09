@@ -53,3 +53,9 @@ export async function apiUploadTaskAttachment(taskId, file) {
   // server returns { attachments: [...] }
   return res.data; // { attachments }
 }
+
+
+export async function apiTaskSuggestions(payload) {
+  const res = await http.post('/tasks/suggestions', payload);
+  return res.data; // { suggestions }
+}

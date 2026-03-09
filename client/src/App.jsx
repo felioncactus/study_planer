@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import Tasks from "./pages/Tasks";
+import Activities from "./pages/Activities";
 import TaskDetail from "./pages/TaskDetail";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
@@ -54,6 +55,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Tasks />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/activities"
+        element={
+          <ProtectedRoute>
+            <Activities />
           </ProtectedRoute>
         }
       />

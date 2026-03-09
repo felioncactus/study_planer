@@ -10,6 +10,8 @@ import {
   updateTask,
   getTaskSummaryByUserId,
 } from "../repositories/tasks.repo.js";
+import { createCalendarBlocksBulk } from "../repositories/calendarBlocks.repo.js";
+import { suggestTaskSchedule } from "./taskSuggestions.service.js";
 
 const statusEnum = z.enum(["todo", "doing", "done"]);
 
@@ -55,6 +57,8 @@ function normalizeBody(input) {
     estimated_minutes: input.estimated_minutes ?? input.estimatedMinutes,
     priority: input.priority,
     splittable: input.splittable,
+    planned_start_at: input.planned_start_at ?? input.plannedStartAt,
+    planned_end_at: input.planned_end_at ?? input.plannedEndAt,
   };
 }
 
@@ -67,6 +71,8 @@ const createSchema = z.object({
   estimated_minutes: z.number().int().min(1).max(24 * 60).optional().default(60),
   priority: z.number().int().min(1).max(5).optional().default(3),
   splittable: z.boolean().optional().default(true),
+  planned_start_at: z.string().optional().nullable(),
+  planned_end_at: z.string().optional().nullable(),
 });
 
 const updateSchema = z
@@ -113,7 +119,7 @@ export async function createTaskForUser(userId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at } = parsed.data;
 
   if (course_id) {
     const ok = await courseExistsForUser({ courseId: course_id, userId });
@@ -134,6 +140,22 @@ export async function createTaskForUser(userId, body) {
     splittable,
   });
 
+  // Optional: if the client picked a planned slot, create a matching calendar block.
+  if (planned_start_at && planned_end_at) {
+    await createCalendarBlocksBulk(userId, [
+      {
+        task_id: created.id,
+        type: "task",
+        title: created.title,
+        start_at: planned_start_at,
+        end_at: planned_end_at,
+        is_fixed: false,
+        source: "manual",
+        meta: { kind: "planned" },
+      },
+    ]);
+  }
+
   return serializeTask(created);
 }
 
@@ -144,7 +166,7 @@ export async function updateTaskForUser(userId, taskId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at } = parsed.data;
 
   if (Object.prototype.hasOwnProperty.call(parsed.data, "course_id")) {
     if (course_id) {
@@ -221,4 +243,10 @@ export async function deleteTaskForUser(userId, taskId) {
 
 export async function getSummaryForUser(userId) {
   return await getTaskSummaryByUserId(userId);
+}
+
+
+export async function getTaskSuggestionsForUser(userId, body) {
+  // body: { dueDate?, estimatedMinutes?, horizonDays? }
+  return await suggestTaskSchedule(userId, body);
 }

@@ -8,6 +8,7 @@ import { friendsRouter } from "./friends.routes.js";
 import { messagesRouter } from "./messages.routes.js";
 import { notificationsRouter } from "./notifications.routes.js";
 import { calendarRouter } from "./calendar.routes.js";
+import { activitiesRouter } from "./activities.routes.js";
 
 export const apiRouter = Router();
 
@@ -21,6 +22,7 @@ apiRouter.use("/courses", coursesRouter);
 apiRouter.use("/tasks", tasksRouter);
 
 apiRouter.use("/calendar", calendarRouter);
+apiRouter.use("/activities", activitiesRouter);
 
 apiRouter.use("/friends", friendsRouter);
 apiRouter.use("/messages", messagesRouter);
