@@ -6,6 +6,7 @@
 - [ ] Fix an A.I widget to display properly
 - [ ] Responsive and good looking design
 - [ ] Write a script that will run both server and client side with just one scirpt
+- [ ] Add button that will rearange tasks so you could find time for it
 
 ## Medium Priority
 
