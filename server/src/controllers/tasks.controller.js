@@ -8,6 +8,7 @@ import {
   getSummaryForUser,
   getTaskSuggestionsForUser,
 } from "../services/tasks.service.js";
+import { estimateTaskDuration, aiPlanTaskForUser } from "../services/aiPlanner.service.js";
 import {
   addAttachmentsToTask,
   listAttachmentsForTask,
@@ -47,6 +48,26 @@ export const tasksSummaryHandler = asyncHandler(async (req, res) => {
 export const taskSuggestionsHandler = asyncHandler(async (req, res) => {
   const suggestions = await getTaskSuggestionsForUser(req.user.id, req.body);
   res.json({ suggestions });
+});
+
+
+export const estimateTaskDurationHandler = asyncHandler(async (req, res) => {
+  const { title, description } = req.body || {};
+  const result = await estimateTaskDuration({ title, description });
+  res.json({ estimate: result });
+});
+
+export const aiPlanTaskHandler = asyncHandler(async (req, res) => {
+  const { title, description, dueDate, due_date, estimatedMinutes, estimated_minutes, horizonDays, studyWindow } = req.body || {};
+  const plan = await aiPlanTaskForUser(req.user.id, {
+    title,
+    description,
+    dueDate: dueDate ?? due_date ?? null,
+    estimatedMinutes: estimatedMinutes ?? estimated_minutes,
+    horizonDays,
+    studyWindow,
+  });
+  res.json({ plan });
 });
 
 export const addTaskAttachmentsHandler = asyncHandler(async (req, res) => {

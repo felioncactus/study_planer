@@ -59,6 +59,8 @@ function normalizeBody(input) {
     splittable: input.splittable,
     planned_start_at: input.planned_start_at ?? input.plannedStartAt,
     planned_end_at: input.planned_end_at ?? input.plannedEndAt,
+    planned_blocks: input.planned_blocks ?? input.plannedBlocks,
+    planned_source: input.planned_source ?? input.plannedSource,
   };
 }
 
@@ -73,6 +75,18 @@ const createSchema = z.object({
   splittable: z.boolean().optional().default(true),
   planned_start_at: z.string().optional().nullable(),
   planned_end_at: z.string().optional().nullable(),
+  planned_blocks: z
+    .array(
+      z.object({
+        start_at: z.string(),
+        end_at: z.string(),
+        title: z.string().optional(),
+        minutes: z.number().int().optional(),
+      })
+    )
+    .optional()
+    .nullable(),
+  planned_source: z.enum(["manual", "ai"]).optional().default("manual"),
 });
 
 const updateSchema = z
@@ -119,7 +133,7 @@ export async function createTaskForUser(userId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at, planned_blocks, planned_source } = parsed.data;
 
   if (course_id) {
     const ok = await courseExistsForUser({ courseId: course_id, userId });
@@ -141,7 +155,22 @@ export async function createTaskForUser(userId, body) {
   });
 
   // Optional: if the client picked a planned slot, create a matching calendar block.
-  if (planned_start_at && planned_end_at) {
+  const planned = Array.isArray(planned_blocks) ? planned_blocks : null;
+  if (planned && planned.length) {
+    const blocks = planned
+      .filter((b) => b && b.start_at && b.end_at)
+      .map((b, i) => ({
+        task_id: created.id,
+        type: "task",
+        title: (b.title || created.title).trim(),
+        start_at: b.start_at,
+        end_at: b.end_at,
+        is_fixed: false,
+        source: planned_source || "manual",
+        meta: { kind: "planned-part", partIndex: i + 1, totalParts: planned.length, minutes: b.minutes ?? null },
+      }));
+    if (blocks.length) await createCalendarBlocksBulk(userId, blocks);
+  } else if (planned_start_at && planned_end_at) {
     await createCalendarBlocksBulk(userId, [
       {
         task_id: created.id,
@@ -150,7 +179,7 @@ export async function createTaskForUser(userId, body) {
         start_at: planned_start_at,
         end_at: planned_end_at,
         is_fixed: false,
-        source: "manual",
+        source: planned_source || "manual",
         meta: { kind: "planned" },
       },
     ]);
@@ -166,7 +195,7 @@ export async function updateTaskForUser(userId, taskId, body) {
     throw badRequest("Invalid task payload", "VALIDATION_ERROR");
   }
 
-  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at } = parsed.data;
+  const { title, description, due_date, status, course_id, estimated_minutes, priority, splittable, planned_start_at, planned_end_at, planned_blocks, planned_source } = parsed.data;
 
   if (Object.prototype.hasOwnProperty.call(parsed.data, "course_id")) {
     if (course_id) {

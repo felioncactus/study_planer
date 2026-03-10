@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import TaskPlannerModal from "../components/TaskPlannerModal";
 import { apiListCourses } from "../api/courses.api";
-import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask, apiUploadTaskAttachments, apiTaskSuggestions } from "../api/tasks.api";
+import { apiCreateTask, apiDeleteTask, apiListTasks, apiUpdateTask, apiUploadTaskAttachments, apiTaskSuggestions, apiEstimateTaskDuration } from "../api/tasks.api";
 import { useLocation, Link } from "react-router-dom";
 export default function Tasks() {
   const location = useLocation();
@@ -21,6 +21,9 @@ export default function Tasks() {
   const [estimatedMinutes, setEstimatedMinutes] = useState(60);
   const [priority, setPriority] = useState(3);
   const [splittable, setSplittable] = useState(true);
+
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateNotes, setEstimateNotes] = useState("");
 
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [plannerStudyWindow, setPlannerStudyWindow] = useState({ start: "18:00", end: "22:00" });
@@ -103,7 +106,10 @@ export default function Tasks() {
     setError("");
     try {
       const payload = { ...(pendingPayload || {}) };
-      if (picked?.start && picked?.end) {
+      if (picked?.blocks?.length) {
+        payload.plannedBlocks = picked.blocks;
+        payload.plannedSource = "ai";
+      } else if (picked?.start && picked?.end) {
         payload.plannedStartAt = picked.start;
         payload.plannedEndAt = picked.end;
       }
@@ -148,6 +154,22 @@ export default function Tasks() {
       setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to delete task");
+    }
+  }
+
+  async function estimateMinutesWithAI() {
+    setEstimateNotes("");
+    setError("");
+    try {
+      setEstimateLoading(true);
+      const d = await apiEstimateTaskDuration({ title, description });
+      const est = d?.estimate?.estimatedMinutes;
+      if (typeof est === "number") setEstimatedMinutes(est);
+      if (d?.estimate?.notes) setEstimateNotes(d.estimate.notes);
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || "Failed to estimate time");
+    } finally {
+      setEstimateLoading(false);
     }
   }
 
@@ -227,13 +249,26 @@ export default function Tasks() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               <label style={{ display: "grid", gap: 6 }}>
                 Estimated minutes
-                <input
-                  type="number"
-                  min="1"
-                  max="1440"
-                  value={estimatedMinutes}
-                  onChange={(e) => setEstimatedMinutes(e.target.value)}
-                />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={estimatedMinutes}
+                    onChange={(e) => setEstimatedMinutes(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={estimateMinutesWithAI}
+                    disabled={estimateLoading || (!title && !description)}
+                    style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ddd" }}
+                    title="Estimate time from the task description"
+                  >
+                    {estimateLoading ? "Estimating..." : "Estimate with AI"}
+                  </button>
+                </div>
+                {estimateNotes ? <div style={{ fontSize: 12, opacity: 0.8 }}>{estimateNotes}</div> : null}
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
@@ -341,6 +376,10 @@ export default function Tasks() {
 
       <TaskPlannerModal
         open={plannerOpen}
+        taskTitle={pendingPayload?.title ?? title}
+        taskDescription={pendingPayload?.description ?? description}
+        taskDueDate={(pendingPayload?.dueDate ?? dueDate) || null}
+        taskEstimatedMinutes={Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) || 60}
         suggestions={plannerData}
         loading={plannerLoading}
         currentStudyWindow={plannerStudyWindow}

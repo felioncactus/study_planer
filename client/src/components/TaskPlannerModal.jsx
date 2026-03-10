@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { apiAiPlanTask } from "../api/tasks.api";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -53,10 +54,44 @@ function levelClass(level) {
   return "planner-day";
 }
 
-export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm, currentStudyWindow, onStudyWindowChange, loading }) {
+export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm, currentStudyWindow, onStudyWindowChange, loading, taskTitle, taskDescription, taskDueDate, taskEstimatedMinutes }) {
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedYmd, setSelectedYmd] = useState(() => toYmd(new Date()));
-  const [picked, setPicked] = useState(null); // { start, end }
+  const [picked, setPicked] = useState(null); // { start, end } or { blocks: [...] }
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPlan, setAiPlan] = useState(null);
+  const [aiError, setAiError] = useState("");
+
+
+  useEffect(() => {
+    if (!open) {
+      setPicked(null);
+      setAiPlan(null);
+      setAiError("");
+      setAiLoading(false);
+    }
+  }, [open]);
+
+  async function runAiPlan() {
+    setAiError("");
+    setAiPlan(null);
+    try {
+      setAiLoading(true);
+      const d = await apiAiPlanTask({
+        title: taskTitle,
+        description: taskDescription,
+        dueDate: taskDueDate,
+        estimatedMinutes: taskEstimatedMinutes,
+        horizonDays: 7,
+        studyWindow: currentStudyWindow,
+      });
+      setAiPlan(d?.plan || null);
+    } catch (err) {
+      setAiError(err?.response?.data?.error?.message || "Failed to generate AI plan");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   const PRESETS = useMemo(
     () => [
@@ -264,6 +299,65 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
             ) : (
               <div className="small muted">No free time inside your study window.</div>
             )}
+
+
+            <div className="card" style={{ marginTop: 14, padding: 12 }}>
+              <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>AI week rearrange</div>
+                  <div className="small muted">If it looks like there is no good time, ask AI to fit it into your week (or split it into parts).</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={runAiPlan}
+                  disabled={aiLoading || !taskTitle}
+                  title="Ask AI to pick the best time (or split into parts)"
+                >
+                  {aiLoading ? "Planning..." : "AI arrange week"}
+                </button>
+              </div>
+
+              {aiError ? <div className="small" style={{ marginTop: 8, color: "crimson" }}>{aiError}</div> : null}
+
+              {aiPlan ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  <div className="small">
+                    <b>Plan:</b> {aiPlan.mode === "split" ? "Split into parts" : "Single block"} • Total {aiPlan.totalMinutes} min
+                  </div>
+
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {aiPlan.blocks?.map((b, i) => (
+                      <div key={i} className="small" style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <span>{b.label || taskTitle}</span>
+                        <span style={{ whiteSpace: "nowrap" }}>
+                          {String(b.start).replace("T", " ").slice(0, 16)} → {String(b.end).replace("T", " ").slice(0, 16)} ({b.minutes}m)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {aiPlan.notes ? <div className="small muted">{aiPlan.notes}</div> : null}
+
+                  <div className="row" style={{ justifyContent: "flex-end", gap: 10 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => {
+                        if (!aiPlan?.blocks?.length) return;
+                        if (aiPlan.blocks.length === 1) {
+                          setPicked({ start: aiPlan.blocks[0].start, end: aiPlan.blocks[0].end });
+                        } else {
+                          setPicked({ blocks: aiPlan.blocks.map((x) => ({ start_at: x.start, end_at: x.end, title: x.label || taskTitle, minutes: x.minutes })) });
+                        }
+                      }}
+                    >
+                      Use this plan
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
 
             <div className="row" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
               <button className="btn btn-ghost" onClick={onClose}>

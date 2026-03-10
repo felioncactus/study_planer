@@ -9,6 +9,8 @@ import {
   deleteTaskHandler,
   tasksSummaryHandler,
   taskSuggestionsHandler,
+  estimateTaskDurationHandler,
+  aiPlanTaskHandler,
   addTaskAttachmentsHandler,
   listTaskAttachmentsHandler,
   deleteTaskAttachmentHandler,
@@ -22,6 +24,10 @@ tasksRouter.get("/summary", tasksSummaryHandler);
 
 // Draft task scheduling suggestions (calendar heatmap + best slots)
 tasksRouter.post("/suggestions", taskSuggestionsHandler);
+
+// AI helpers
+tasksRouter.post("/estimate-duration", estimateTaskDurationHandler);
+tasksRouter.post("/ai-plan", aiPlanTaskHandler);
 
 tasksRouter.get("/", listTasksHandler);
 tasksRouter.get("/:id", getTaskHandler);

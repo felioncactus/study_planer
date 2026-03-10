@@ -59,3 +59,14 @@ export async function apiTaskSuggestions(payload) {
   const res = await http.post('/tasks/suggestions', payload);
   return res.data; // { suggestions }
 }
+
+
+export async function apiEstimateTaskDuration({ title, description }) {
+  const res = await http.post("/tasks/estimate-duration", { title, description });
+  return res.data; // { estimate }
+}
+
+export async function apiAiPlanTask(payload) {
+  const res = await http.post("/tasks/ai-plan", payload);
+  return res.data; // { plan }
+}
