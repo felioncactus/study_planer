@@ -10,7 +10,7 @@ import {
   updateTask,
   getTaskSummaryByUserId,
 } from "../repositories/tasks.repo.js";
-import { createCalendarBlocksBulk } from "../repositories/calendarBlocks.repo.js";
+import { createCalendarBlocksBulk, deleteCalendarBlocksByTaskIds } from "../repositories/calendarBlocks.repo.js";
 import { suggestTaskSchedule } from "./taskSuggestions.service.js";
 
 const statusEnum = z.enum(["todo", "doing", "done"]);
@@ -155,7 +155,7 @@ export async function createTaskForUser(userId, body) {
   });
 
   // Optional: if the client picked a planned slot, create a matching calendar block.
-  const planned = Array.isArray(planned_blocks) ? planned_blocks : null;
+  const planned = status === "done" ? null : (Array.isArray(planned_blocks) ? planned_blocks : null);
   if (planned && planned.length) {
     const blocks = planned
       .filter((b) => b && b.start_at && b.end_at)
@@ -170,7 +170,7 @@ export async function createTaskForUser(userId, body) {
         meta: { kind: "planned-part", partIndex: i + 1, totalParts: planned.length, minutes: b.minutes ?? null },
       }));
     if (blocks.length) await createCalendarBlocksBulk(userId, blocks);
-  } else if (planned_start_at && planned_end_at) {
+  } else if (status !== "done" && planned_start_at && planned_end_at) {
     await createCalendarBlocksBulk(userId, [
       {
         task_id: created.id,
@@ -259,10 +259,15 @@ export async function updateTaskForUser(userId, taskId, body) {
     throw notFound("Task not found", "TASK_NOT_FOUND");
   }
 
+  if (updated.status === "done") {
+    await deleteCalendarBlocksByTaskIds(userId, [taskId]);
+  }
+
   return serializeTask(updated);
 }
 
 export async function deleteTaskForUser(userId, taskId) {
+  await deleteCalendarBlocksByTaskIds(userId, [taskId]);
   const deleted = await deleteTask({ userId, taskId });
   if (!deleted) {
     throw notFound("Task not found", "TASK_NOT_FOUND");

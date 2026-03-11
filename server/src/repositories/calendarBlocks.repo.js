@@ -98,3 +98,24 @@ export async function createCalendarBlocksBulk(userId, blocks) {
 
   return result.rows;
 }
+
+
+export async function deleteCalendarBlocksByTaskIds(userId, taskIds) {
+  const ids = Array.isArray(taskIds)
+    ? taskIds.map((id) => String(id || "").trim()).filter(Boolean)
+    : [String(taskIds || "").trim()].filter(Boolean);
+
+  if (!ids.length) return [];
+
+  const result = await pool.query(
+    `
+    DELETE FROM calendar_blocks
+    WHERE user_id = $1
+      AND task_id = ANY($2::uuid[])
+    RETURNING id;
+    `,
+    [userId, ids]
+  );
+
+  return result.rows.map((row) => row.id);
+}

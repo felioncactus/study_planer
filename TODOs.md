@@ -7,8 +7,6 @@
 - [ ] Responsive and good looking design
 - [ ] Write a script that will run both server and client side with just one scirpt
 - [ ] How to obtain information from a pdf? (To help estimate and rearange tasks)
-- [ ] When marked task as done it not delete 
-      it from d=calendar and do not let other ctivities to place
 
 ## Medium Priority
 
@@ -26,6 +24,8 @@
 - [x] Can not change information via course setting
 - [x] Delete all image files form repo
 - [x] Add button that will rearange tasks so you could find time for it
+- [x] When marked task as done it not delete 
+      it from calendar and do not let other ctivities to place
 ---
 
 ### Notes

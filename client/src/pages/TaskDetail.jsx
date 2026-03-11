@@ -134,7 +134,7 @@ export default function TaskDetail() {
     return (
       <>
         <Navbar />
-        <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>Loading...</div>
+        <div className="container" style={{ marginTop: 18 }}>Loading...</div>
       </>
     );
   }
@@ -143,7 +143,7 @@ export default function TaskDetail() {
     return (
       <>
         <Navbar />
-        <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
+        <div className="container stack" style={{ marginTop: 18 }}>
           <div style={{ marginBottom: 10 }}>
             <Link to="/tasks">← Back to tasks</Link>
           </div>
@@ -156,24 +156,20 @@ export default function TaskDetail() {
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
+      <div className="container stack" style={{ marginTop: 18 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Link to="/tasks">← Back</Link>
             <h2 style={{ margin: 0, lineHeight: 1.1 }}>Task</h2>
           </div>
-          <button onClick={onDeleteTask} style={{ color: "crimson" }}>
+          <button className="btn btn-danger" onClick={onDeleteTask}>
             delete
           </button>
         </div>
 
-        {error && (
-          <div style={{ color: "crimson", marginTop: 10, border: "1px solid #fecaca", background: "#fff1f2", padding: 10, borderRadius: 10 }}>
-            {error}
-          </div>
-        )}
+        {error ? <div className="notice notice-danger">{error}</div> : null}
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16, marginTop: 14 }}>
+        <div className="card">
           <h3 style={{ marginTop: 0 }}>Details</h3>
 
           <form onSubmit={onSave} style={{ display: "grid", gap: 10 }}>
@@ -209,17 +205,17 @@ export default function TaskDetail() {
             </div>
 
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button type="submit" disabled={saving || !title.trim()}>
+              <button type="submit" className="btn btn-primary" disabled={saving || !title.trim()}>
                 {saving ? "Saving..." : "Save"}
               </button>
-              <div style={{ fontSize: 12, color: "#6b7280" }}>
+              <div className="small muted">
                 Created: {task.created_at ? new Date(task.created_at).toLocaleString() : "-"}
               </div>
             </div>
           </form>
         </div>
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16, marginTop: 14 }}>
+        <div className="card">
           <h3 style={{ marginTop: 0 }}>Attachments</h3>
 
           <form onSubmit={onUpload} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -228,14 +224,14 @@ export default function TaskDetail() {
               type="file"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
-            <button type="submit" disabled={!file || uploading}>
+            <button type="submit" className="btn btn-primary" disabled={!file || uploading}>
               {uploading ? "Uploading..." : "Upload"}
             </button>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Max 20MB per file</div>
+            <div className="small muted">Max 20MB per file</div>
           </form>
 
           {attachments.length === 0 ? (
-            <div style={{ marginTop: 12, color: "#666" }}>No attachments yet.</div>
+            <div className="small muted" style={{ marginTop: 12 }}>No attachments yet.</div>
           ) : (
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {attachments.map((a) => {
@@ -244,7 +240,7 @@ export default function TaskDetail() {
                   <div
                     key={a.id}
                     style={{
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid var(--border)",
                       borderRadius: 14,
                       padding: 12,
                       display: "flex",
@@ -253,12 +249,12 @@ export default function TaskDetail() {
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: "#111", wordBreak: "break-word" }}>
+                      <div style={{ fontWeight: 800, color: "var(--fg)", wordBreak: "break-word" }}>
                         <a href={href} target="_blank" rel="noreferrer">
                           {a.original_filename}
                         </a>
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
                         {fmtBytes(a.size_bytes)} • {a.mime_type || "unknown"} •{" "}
                         {a.created_at ? new Date(a.created_at).toLocaleString() : ""}
                       </div>
@@ -268,7 +264,7 @@ export default function TaskDetail() {
                       <a href={href} target="_blank" rel="noreferrer">
                         open
                       </a>
-                      <button onClick={() => onDeleteAttachment(a)} style={{ color: "crimson" }} type="button">
+                      <button onClick={() => onDeleteAttachment(a)} className="btn btn-danger" type="button">
                         delete
                       </button>
                     </div>
