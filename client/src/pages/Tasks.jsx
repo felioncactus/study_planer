@@ -41,7 +41,10 @@ export default function Tasks() {
   const [estimateNotes, setEstimateNotes] = useState("");
 
   const [plannerOpen, setPlannerOpen] = useState(false);
-  const [plannerStudyWindow, setPlannerStudyWindow] = useState({ start: "18:00", end: "22:00" });
+  const [plannerStudyWindow, setPlannerStudyWindow] = useState({
+    start: "18:00",
+    end: "22:00",
+  });
   const [plannerLoading, setPlannerLoading] = useState(false);
   const [plannerData, setPlannerData] = useState(null);
   const [pendingPayload, setPendingPayload] = useState(null);
@@ -72,7 +75,10 @@ export default function Tasks() {
       if (filterStatus) filters.status = filterStatus;
       if (filterCourseId) filters.courseId = filterCourseId;
 
-      const [cData, tData] = await Promise.all([apiListCourses(), apiListTasks(filters)]);
+      const [cData, tData] = await Promise.all([
+        apiListCourses(),
+        apiListTasks(filters),
+      ]);
       setCourses(cData.courses || []);
       setTasks(tData.tasks || []);
     } catch (err) {
@@ -112,7 +118,8 @@ export default function Tasks() {
         studyWindow: plannerStudyWindow,
       });
       setPlannerData(data.suggestions);
-      if (data?.suggestions?.studyWindow) setPlannerStudyWindow(data.suggestions.studyWindow);
+      if (data?.suggestions?.studyWindow)
+        setPlannerStudyWindow(data.suggestions.studyWindow);
       setPlannerOpen(true);
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to load planner");
@@ -168,7 +175,9 @@ export default function Tasks() {
     setError("");
     try {
       const data = await apiUpdateTask(taskId, { status: nextStatus });
-      setTasks((prev) => prev.map((task) => (task.id === taskId ? data.task : task)));
+      setTasks((prev) =>
+        prev.map((task) => (task.id === taskId ? data.task : task)),
+      );
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to update task");
     }
@@ -194,7 +203,9 @@ export default function Tasks() {
       if (typeof estimated === "number") setEstimatedMinutes(estimated);
       if (data?.estimate?.notes) setEstimateNotes(data.estimate.notes);
     } catch (err) {
-      setError(err?.response?.data?.error?.message || "Failed to estimate time");
+      setError(
+        err?.response?.data?.error?.message || "Failed to estimate time",
+      );
     } finally {
       setEstimateLoading(false);
     }
@@ -207,16 +218,25 @@ export default function Tasks() {
         <div className="page-header">
           <div>
             <div className="title">Tasks</div>
-            <div className="small muted">Create, plan, and finish tasks without leaving stale blocks on the calendar.</div>
+            <div className="small muted">
+              Create, plan, and finish tasks without leaving stale blocks on the
+              calendar.
+            </div>
           </div>
-          <Link to="/courses" className="btn btn-ghost">Go to courses</Link>
+          <Link to="/courses" className="btn btn-ghost">
+            Go to courses
+          </Link>
         </div>
 
         {error ? <div className="notice notice-danger">{error}</div> : null}
 
         <div className="card">
           <div className="section-title">Create task</div>
-          <form onSubmit={onCreate} className="form-grid" style={{ marginTop: 12 }}>
+          <form
+            onSubmit={onCreate}
+            className="form-grid"
+            style={{ marginTop: 12 }}
+          >
             <label>
               Title
               <input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -236,22 +256,49 @@ export default function Tasks() {
               Attachments
               <input
                 ref={fileInputRef}
+                id="attachments"
                 type="file"
                 multiple
                 onChange={(e) => setNewFiles(Array.from(e.target.files || []))}
+                style={{ display: "none" }}
               />
-              {newFiles.length ? <div className="small muted">Selected: {newFiles.map((file) => file.name).join(", ")}</div> : null}
+              <label
+                htmlFor="attachments"
+                className="btn btn-ghost"
+                style={{
+                  display: "inline-block",
+                  padding: "8px 16px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  backgroundColor: "#f9f9f9",
+                  cursor: "pointer",
+                }}
+              >
+                Choose files
+              </label>
+              {newFiles.length ? (
+                <div className="small muted">
+                  Selected: {newFiles.map((file) => file.name).join(", ")}
+                </div>
+              ) : null}
             </label>
 
             <div className="two-col three-col-on-desktop">
               <label>
                 Due date
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
               </label>
 
               <label>
                 Status
-                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
                   <option value="todo">todo</option>
                   <option value="doing">doing</option>
                   <option value="done">done</option>
@@ -260,7 +307,10 @@ export default function Tasks() {
 
               <label>
                 Course
-                <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+                <select
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                >
                   <option value="">(none)</option>
                   {courses.map((course) => (
                     <option key={course.id} value={course.id}>
@@ -287,32 +337,51 @@ export default function Tasks() {
                     type="button"
                     className="btn btn-ghost"
                     onClick={estimateMinutesWithAI}
-                    disabled={estimateLoading || (!title.trim() && !description.trim())}
+                    disabled={
+                      estimateLoading || (!title.trim() && !description.trim())
+                    }
                   >
                     {estimateLoading ? "Estimating..." : "Estimate with AI"}
                   </button>
                 </div>
-                {estimateNotes ? <div className="small muted">{estimateNotes}</div> : null}
+                {estimateNotes ? (
+                  <div className="small muted">{estimateNotes}</div>
+                ) : null}
               </label>
 
               <label>
                 Priority (1–5)
-                <input type="number" min="1" max="5" value={priority} onChange={(e) => setPriority(e.target.value)} />
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                />
               </label>
 
               <label>
                 Splittable
-                <select value={splittable ? "yes" : "no"} onChange={(e) => setSplittable(e.target.value === "yes")}>
+                <select
+                  value={splittable ? "yes" : "no"}
+                  onChange={(e) => setSplittable(e.target.value === "yes")}
+                >
                   <option value="yes">yes</option>
                   <option value="no">no</option>
                 </select>
               </label>
             </div>
 
-            {plannerLoading ? <div className="small muted">Loading planner…</div> : null}
+            {plannerLoading ? (
+              <div className="small muted">Loading planner…</div>
+            ) : null}
 
             <div className="row" style={{ justifyContent: "flex-end" }}>
-              <button type="submit" className="btn btn-primary" disabled={!title.trim()}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!title.trim()}
+              >
                 Plan task
               </button>
             </div>
@@ -323,13 +392,18 @@ export default function Tasks() {
           <div className="page-header" style={{ margin: 0 }}>
             <div>
               <div className="section-title">Your tasks</div>
-              <div className="small muted">{tasks.length} task{tasks.length === 1 ? "" : "s"}</div>
+              <div className="small muted">
+                {tasks.length} task{tasks.length === 1 ? "" : "s"}
+              </div>
             </div>
 
             <div className="row">
               <label className="small muted" style={{ minWidth: 120 }}>
                 Status
-                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
                   <option value="">All</option>
                   <option value="todo">todo</option>
                   <option value="doing">doing</option>
@@ -339,7 +413,10 @@ export default function Tasks() {
 
               <label className="small muted" style={{ minWidth: 160 }}>
                 Course
-                <select value={filterCourseId} onChange={(e) => setFilterCourseId(e.target.value)}>
+                <select
+                  value={filterCourseId}
+                  onChange={(e) => setFilterCourseId(e.target.value)}
+                >
                   <option value="">All</option>
                   {courses.map((course) => (
                     <option key={course.id} value={course.id}>
@@ -352,13 +429,19 @@ export default function Tasks() {
           </div>
 
           {loading ? (
-            <div className="small muted" style={{ marginTop: 12 }}>Loading...</div>
+            <div className="small muted" style={{ marginTop: 12 }}>
+              Loading...
+            </div>
           ) : tasks.length === 0 ? (
-            <div className="small muted" style={{ marginTop: 12 }}>No tasks found.</div>
+            <div className="small muted" style={{ marginTop: 12 }}>
+              No tasks found.
+            </div>
           ) : (
             <div className="stack" style={{ marginTop: 12 }}>
               {tasks.map((task) => {
-                const course = task.course_id ? courseMap.get(task.course_id) : null;
+                const course = task.course_id
+                  ? courseMap.get(task.course_id)
+                  : null;
                 return (
                   <div key={task.id} className="task-item">
                     <div style={{ minWidth: 0 }}>
@@ -369,21 +452,54 @@ export default function Tasks() {
                       </div>
                       <div className="small muted" style={{ marginTop: 4 }}>
                         {task.due_date ? `Due: ${task.due_date} • ` : ""}
-                        Status: <span className={`status-pill ${statusTone(task.status)}`}>{task.status}</span>
+                        Status:{" "}
+                        <span
+                          className={`status-pill ${statusTone(task.status)}`}
+                        >
+                          {task.status}
+                        </span>
                         {course ? (
                           <>
                             {" • "}
-                            <Link to={`/courses/${course.id}`}>{course.name}</Link>
+                            <Link to={`/courses/${course.id}`}>
+                              {course.name}
+                            </Link>
                           </>
                         ) : null}
                       </div>
                     </div>
 
                     <div className="task-actions">
-                      {task.status !== "todo" ? <button className="btn btn-ghost" onClick={() => setTaskStatus(task.id, "todo")}>todo</button> : null}
-                      {task.status !== "doing" ? <button className="btn btn-ghost" onClick={() => setTaskStatus(task.id, "doing")}>doing</button> : null}
-                      {task.status !== "done" ? <button className="btn" onClick={() => setTaskStatus(task.id, "done")}>done</button> : null}
-                      <button className="btn btn-danger" onClick={() => onDelete(task.id)}>delete</button>
+                      {task.status !== "todo" ? (
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() => setTaskStatus(task.id, "todo")}
+                        >
+                          todo
+                        </button>
+                      ) : null}
+                      {task.status !== "doing" ? (
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() => setTaskStatus(task.id, "doing")}
+                        >
+                          doing
+                        </button>
+                      ) : null}
+                      {task.status !== "done" ? (
+                        <button
+                          className="btn"
+                          onClick={() => setTaskStatus(task.id, "done")}
+                        >
+                          done
+                        </button>
+                      ) : null}
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => onDelete(task.id)}
+                      >
+                        delete
+                      </button>
                     </div>
                   </div>
                 );
@@ -398,7 +514,9 @@ export default function Tasks() {
         taskTitle={pendingPayload?.title ?? title}
         taskDescription={pendingPayload?.description ?? description}
         taskDueDate={(pendingPayload?.dueDate ?? dueDate) || null}
-        taskEstimatedMinutes={Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) || 60}
+        taskEstimatedMinutes={
+          Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) || 60
+        }
         suggestions={plannerData}
         loading={plannerLoading}
         currentStudyWindow={plannerStudyWindow}
@@ -409,12 +527,16 @@ export default function Tasks() {
           try {
             const data = await apiTaskSuggestions({
               dueDate: (pendingPayload?.dueDate ?? dueDate) || null,
-              estimatedMinutes: Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) || 60,
+              estimatedMinutes:
+                Number(pendingPayload?.estimatedMinutes ?? estimatedMinutes) ||
+                60,
               studyWindow: windowValue,
             });
             setPlannerData(data.suggestions);
           } catch (err) {
-            setError(err?.response?.data?.error?.message || "Failed to update planner");
+            setError(
+              err?.response?.data?.error?.message || "Failed to update planner",
+            );
           } finally {
             setPlannerLoading(false);
           }

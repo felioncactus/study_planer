@@ -13,7 +13,6 @@ import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
 import Friends from "./pages/Friends";
 import FriendChat from "./pages/FriendChat";
-import NoteEditor from "./pages/NoteEditor";
 
 export default function App() {
   return (
@@ -48,14 +47,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CourseDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notes/:noteId"
-        element={
-          <ProtectedRoute>
-            <NoteEditor />
           </ProtectedRoute>
         }
       />

@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { Link } from "react-router-dom";
-import { apiCreateCourse, apiDeleteCourse, apiListCourses } from "../api/courses.api";
+import {
+  apiCreateCourse,
+  apiDeleteCourse,
+  apiListCourses,
+} from "../api/courses.api";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -43,8 +47,14 @@ export default function Courses() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : ""), [imageFile]);
-  const bannerPreview = useMemo(() => (bannerFile ? URL.createObjectURL(bannerFile) : ""), [bannerFile]);
+  const imagePreview = useMemo(
+    () => (imageFile ? URL.createObjectURL(imageFile) : ""),
+    [imageFile],
+  );
+  const bannerPreview = useMemo(
+    () => (bannerFile ? URL.createObjectURL(bannerFile) : ""),
+    [bannerFile],
+  );
 
   async function refresh() {
     setError("");
@@ -99,7 +109,9 @@ export default function Courses() {
 
       await refresh();
     } catch (err) {
-      setError(err?.response?.data?.error?.message || "Failed to create course");
+      setError(
+        err?.response?.data?.error?.message || "Failed to create course",
+      );
     }
   }
 
@@ -109,7 +121,9 @@ export default function Courses() {
       await apiDeleteCourse(id);
       setCourses((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setError(err?.response?.data?.error?.message || "Failed to delete course");
+      setError(
+        err?.response?.data?.error?.message || "Failed to delete course",
+      );
     }
   }
 
@@ -117,29 +131,62 @@ export default function Courses() {
     <>
       <Navbar />
       <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
           <h2 style={{ margin: 0 }}>Courses</h2>
-          <Link to="/tasks" style={{ fontSize: 14 }}>
+          <Link
+            to="/tasks"
+            className="btn btn-ghost"
+            style={{ marginLeft: 10 }}
+          >
             View all tasks →
           </Link>
         </div>
 
-        <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 16, marginTop: 14, marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Create course</h3>
+        <div className="card">
+          <div className="section-title">Create course</div>
 
           <form onSubmit={onCreate} style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "1fr 1fr",
+              }}
+            >
               <label style={{ display: "grid", gap: 6 }}>
                 Name
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="CS101" />
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="CS101"
+                />
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
                 Color
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                  />
                   <code style={{ fontSize: 12 }}>{color}</code>
-                  <span style={{ width: 14, height: 14, borderRadius: 999, background: color, border: "1px solid #ddd" }} />
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 999,
+                      background: color,
+                      border: "1px solid #ddd",
+                    }}
+                  />
                 </div>
               </label>
             </div>
@@ -154,10 +201,19 @@ export default function Courses() {
               />
             </label>
 
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr 1fr" }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "1fr 1fr 1fr",
+              }}
+            >
               <label style={{ display: "grid", gap: 6 }}>
                 Day
-                <select value={dayOfWeek} onChange={(e) => setDayOfWeek(e.target.value)}>
+                <select
+                  value={dayOfWeek}
+                  onChange={(e) => setDayOfWeek(e.target.value)}
+                >
                   <option value="">(optional)</option>
                   {DAYS.map((d) => (
                     <option key={d} value={d}>
@@ -169,47 +225,127 @@ export default function Courses() {
 
               <label style={{ display: "grid", gap: 6 }}>
                 Start time
-                <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
                 End time
-                <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
               </label>
             </div>
 
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "1fr 1fr",
+              }}
+            >
               <label style={{ display: "grid", gap: 6 }}>
                 Midterm
-                <input type="date" value={midtermDate} onChange={(e) => setMidtermDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={midtermDate}
+                  onChange={(e) => setMidtermDate(e.target.value)}
+                />
               </label>
               <label style={{ display: "grid", gap: 6 }}>
                 Final
-                <input type="date" value={finalDate} onChange={(e) => setFinalDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={finalDate}
+                  onChange={(e) => setFinalDate(e.target.value)}
+                />
               </label>
             </div>
 
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+                gridTemplateColumns: "1fr 1fr",
+              }}
+            >
               <label style={{ display: "grid", gap: 6 }}>
                 Course image (square)
-                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                <input
+                  id="imageFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <label
+                  htmlFor="imageFile"
+                  className="btn btn-ghost"
+                  style={{
+                    display: "inline-block",
+                    padding: "8px 16px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    backgroundColor: "#f9f9f9",
+                    cursor: "pointer",
+                  }}
+                >
+                  Choose file
+                </label>
                 {imagePreview ? (
                   <img
                     src={imagePreview}
                     alt="course preview"
-                    style={{ width: 64, height: 64, borderRadius: 16, objectFit: "cover", border: "1px solid #eee" }}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 16,
+                      objectFit: "cover",
+                      border: "1px solid #eee",
+                    }}
                   />
                 ) : null}
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
                 Banner (horizontal, like Twitter/LinkedIn)
-                <input type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
+                <input
+                  id="bannerFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <label
+                  htmlFor="bannerFile"
+                  className="btn btn-ghost"
+                  style={{
+                    display: "inline-block",
+                    padding: "8px 16px",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    backgroundColor: "#f9f9f9",
+                    cursor: "pointer",
+                  }}
+                >
+                  Choose file
+                </label>
                 {bannerPreview ? (
                   <img
                     src={bannerPreview}
                     alt="banner preview"
-                    style={{ width: "100%", height: 72, borderRadius: 12, objectFit: "cover", border: "1px solid #eee" }}
+                    style={{
+                      width: "100%",
+                      height: 72,
+                      borderRadius: 12,
+                      objectFit: "cover",
+                      border: "1px solid #eee",
+                    }}
                   />
                 ) : null}
               </label>
@@ -225,10 +361,12 @@ export default function Courses() {
             </div>
           </form>
 
-          {error && <div style={{ color: "crimson", marginTop: 10 }}>{error}</div>}
+          {error && (
+            <div style={{ color: "crimson", marginTop: 10 }}>{error}</div>
+          )}
         </div>
 
-        <div className="card">
+        <div className="card" style={{ marginTop: 20 }}>
           <h3 style={{ marginTop: 0 }}>Your courses</h3>
 
           {loading ? (
@@ -240,9 +378,13 @@ export default function Courses() {
               {courses.map((c) => {
                 const timeRange = formatTimeRange(c.start_time, c.end_time);
                 const metaParts = [
-                  c.day_of_week ? `${c.day_of_week}${timeRange ? " " : ""}` : "",
+                  c.day_of_week
+                    ? `${c.day_of_week}${timeRange ? " " : ""}`
+                    : "",
                   timeRange,
-                  c.midterm_date ? `Midterm: ${ymdToLabel(c.midterm_date)}` : "",
+                  c.midterm_date
+                    ? `Midterm: ${ymdToLabel(c.midterm_date)}`
+                    : "",
                   c.final_date ? `Final: ${ymdToLabel(c.final_date)}` : "",
                 ].filter(Boolean);
 
@@ -259,7 +401,9 @@ export default function Courses() {
                     <div
                       style={{
                         height: 84,
-                        backgroundImage: c.banner_url ? `url(${c.banner_url})` : "none",
+                        backgroundImage: c.banner_url
+                          ? `url(${c.banner_url})`
+                          : "none",
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundColor: c.banner_url ? undefined : "#f3f4f6",
@@ -282,17 +426,47 @@ export default function Courses() {
                         }}
                       >
                         {c.image_url ? (
-                          <img src={c.image_url} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <img
+                            src={c.image_url}
+                            alt={c.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
                         ) : (
-                          <span style={{ fontWeight: 800, color: "#111" }}>{(c.name || "?").slice(0, 2).toUpperCase()}</span>
+                          <span style={{ fontWeight: 800, color: "#111" }}>
+                            {(c.name || "?").slice(0, 2).toUpperCase()}
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ padding: "34px 14px 12px 14px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <div
+                      style={{
+                        padding: "34px 14px 12px 14px",
+                        display: "flex",
+                        gap: 12,
+                        alignItems: "flex-start",
+                      }}
+                    >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <Link to={`/courses/${c.id}`} style={{ fontWeight: 800, fontSize: 16, color: "#111" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Link
+                            to={`/courses/${c.id}`}
+                            style={{
+                              fontWeight: 800,
+                              fontSize: 16,
+                              color: "#111",
+                            }}
+                          >
                             {c.name}
                           </Link>
                           {c.color ? (
@@ -310,15 +484,35 @@ export default function Courses() {
                         </div>
 
                         {c.description ? (
-                          <div style={{ marginTop: 6, color: "#444", fontSize: 13, whiteSpace: "pre-wrap" }}>{c.description}</div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              color: "#444",
+                              fontSize: 13,
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {c.description}
+                          </div>
                         ) : null}
 
                         {metaParts.length ? (
-                          <div style={{ marginTop: 8, color: "#666", fontSize: 12 }}>{metaParts.join(" • ")}</div>
+                          <div
+                            style={{
+                              marginTop: 8,
+                              color: "#666",
+                              fontSize: 12,
+                            }}
+                          >
+                            {metaParts.join(" • ")}
+                          </div>
                         ) : null}
                       </div>
 
-                      <button onClick={() => onDelete(c.id)} style={{ marginLeft: "auto" }}>
+                      <button
+                        onClick={() => onDelete(c.id)}
+                        style={{ marginLeft: "auto" }}
+                      >
                         Delete
                       </button>
                     </div>

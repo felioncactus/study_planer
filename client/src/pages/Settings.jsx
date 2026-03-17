@@ -71,7 +71,7 @@ export default function Settings() {
     setStatus("");
 
     const ok = window.confirm(
-      "Delete your account permanently? This will remove all your data (tasks, courses, schedules). This cannot be undone."
+      "Delete your account permanently? This will remove all your data (tasks, courses, schedules). This cannot be undone.",
     );
     if (!ok) return;
 
@@ -80,7 +80,11 @@ export default function Settings() {
       logout();
       nav("/register", { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || err.message || "Failed to delete account");
+      setError(
+        err?.response?.data?.message ||
+          err.message ||
+          "Failed to delete account",
+      );
     }
   }
 
@@ -91,7 +95,9 @@ export default function Settings() {
         <div className="page-title">
           <div>
             <div className="title">Account Settings</div>
-            <div className="muted small">Update your profile, email, and avatar — or delete your account.</div>
+            <div className="muted small">
+              Update your profile, email, and avatar — or delete your account.
+            </div>
           </div>
         </div>
 
@@ -99,28 +105,62 @@ export default function Settings() {
           <form className="form-grid" onSubmit={onSave}>
             <div className="row" style={{ alignItems: "flex-start" }}>
               <div className="avatar" style={{ width: 64, height: 64 }}>
-                {avatarPreview ? <img src={avatarPreview} alt="avatar" /> : <span className="small">🙂</span>}
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="avatar" />
+                ) : (
+                  <span className="small">🙂</span>
+                )}
               </div>
 
               <div style={{ flex: 1, minWidth: 260 }}>
                 <div className="two-col">
                   <label>
                     Name
-                    <input value={name} onChange={(e) => setName(e.target.value)} />
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
                   </label>
                   <label>
                     Email
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
                   </label>
                 </div>
 
                 <label style={{ marginTop: 8 }}>
                   Avatar
-                  <input type="file" accept="image/*" onChange={(e) => onPickAvatar(e.target.files?.[0] || null)} />
+                  <input
+                    id="avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => onPickAvatar(e.target.files?.[0] || null)}
+                    style={{ display: "none" }}
+                  />
+                  <label
+                    htmlFor="avatar"
+                    className="btn btn-ghost"
+                    style={{
+                      display: "inline-block",
+                      padding: "8px 16px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      backgroundColor: "#f9f9f9",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Choose file
+                  </label>
                 </label>
 
                 <div className="row" style={{ marginTop: 10 }}>
-                  <button className="btn btn-primary" type="submit" disabled={saving}>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={saving}
+                  >
                     {saving ? "Saving…" : "Save changes"}
                   </button>
                   <button
@@ -135,7 +175,11 @@ export default function Settings() {
                 </div>
 
                 {status && <div className="small muted">{status}</div>}
-                {error && <div className="small" style={{ color: "var(--danger)" }}>{error}</div>}
+                {error && (
+                  <div className="small" style={{ color: "var(--danger)" }}>
+                    {error}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -146,7 +190,11 @@ export default function Settings() {
                 <div style={{ fontWeight: 650 }}>Danger zone</div>
                 <div className="small muted">This action is permanent.</div>
               </div>
-              <button className="btn btn-danger" type="button" onClick={onDeleteAccount}>
+              <button
+                className="btn btn-danger"
+                type="button"
+                onClick={onDeleteAccount}
+              >
                 Delete account
               </button>
             </div>
