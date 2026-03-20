@@ -1,8 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import TaskPlannerModal from "../components/TaskPlannerModal";
 import { apiGetCourse, apiUpdateCourse, apiDeleteCourse } from "../api/courses.api";
-import { apiCreateTask, apiListTasks, apiUpdateTask, apiDeleteTask } from "../api/tasks.api";
+import {
+  apiCreateTask,
+  apiDeleteTask,
+  apiEstimateTaskDuration,
+  apiListTasks,
+  apiTaskSuggestions,
+  apiUpdateTask,
+  apiUploadTaskAttachments,
+} from "../api/tasks.api";
 import { apiListCourseNotes, apiCreateCourseNote } from "../api/notes.api";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -35,6 +44,12 @@ function formatStamp(value) {
   }).format(date);
 }
 
+function statusTone(status) {
+  if (status === "done") return "success";
+  if (status === "doing") return "warning";
+  return "neutral";
+}
+
 function Pill({ children }) {
   return (
     <span
@@ -55,6 +70,7 @@ function Pill({ children }) {
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   const [course, setCourse] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -77,12 +93,28 @@ export default function CourseDetail() {
   const [removeImage, setRemoveImage] = useState(false);
   const [removeBanner, setRemoveBanner] = useState(false);
 
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("Homework 1");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskFiles, setTaskFiles] = useState([]);
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskStatus, setTaskStatus] = useState("todo");
+  const [estimatedMinutes, setEstimatedMinutes] = useState(60);
+  const [priority, setPriority] = useState(3);
+  const [splittable, setSplittable] = useState(true);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateNotes, setEstimateNotes] = useState("");
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerLoading, setPlannerLoading] = useState(false);
+  const [plannerStudyWindow, setPlannerStudyWindow] = useState({
+    start: "18:00",
+    end: "22:00",
+  });
+  const [plannerData, setPlannerData] = useState(null);
+  const [pendingTaskPayload, setPendingTaskPayload] = useState(null);
+
   const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : ""), [imageFile]);
   const bannerPreview = useMemo(() => (bannerFile ? URL.createObjectURL(bannerFile) : ""), [bannerFile]);
-
-  const [newTitle, setNewTitle] = useState("");
-  const [newDue, setNewDue] = useState("");
-  const [newStatus, setNewStatus] = useState("todo");
 
   const headerStyle = useMemo(() => {
     if (!course) return {};
@@ -111,8 +143,8 @@ export default function CourseDetail() {
         apiListCourseNotes(id),
       ]);
       setCourse(c.course);
-      setTasks(t.tasks);
-      setNotes(n.notes);
+      setTasks(t.tasks || []);
+      setNotes(n.notes || []);
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to load course");
     } finally {
@@ -185,24 +217,106 @@ export default function CourseDetail() {
     }
   }
 
-  async function onCreateTask(e) {
+  async function onPlanTask(e) {
     e.preventDefault();
     setError("");
     setNotice("");
+    const payload = {
+      title: taskTitle.trim(),
+      description: taskDescription.trim() || undefined,
+      status: taskStatus,
+      courseId: id,
+      dueDate: taskDueDate || undefined,
+      estimatedMinutes: Number(estimatedMinutes) || 60,
+      priority: Number(priority) || 3,
+      splittable: !!splittable,
+    };
+
+    setPendingTaskPayload(payload);
+    setPlannerLoading(true);
     try {
-      const payload = { title: newTitle, status: newStatus, courseId: id };
-      if (newDue) payload.dueDate = newDue;
+      const data = await apiTaskSuggestions({
+        dueDate: payload.dueDate || null,
+        estimatedMinutes: payload.estimatedMinutes,
+        studyWindow: plannerStudyWindow,
+      });
+      setPlannerData(data.suggestions);
+      if (data?.suggestions?.studyWindow) {
+        setPlannerStudyWindow(data.suggestions.studyWindow);
+      }
+      setPlannerOpen(true);
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || "Failed to load planner");
+    } finally {
+      setPlannerLoading(false);
+    }
+  }
+
+  async function createTaskWithPickedSlot(picked) {
+    setError("");
+    try {
+      const payload = { ...(pendingTaskPayload || {}) };
+      if (picked?.blocks?.length) {
+        payload.plannedBlocks = picked.blocks;
+        payload.plannedSource = "ai";
+      } else if (picked?.start && picked?.end) {
+        payload.plannedStartAt = picked.start;
+        payload.plannedEndAt = picked.end;
+      }
+
       const data = await apiCreateTask(payload);
+
+      if (taskFiles.length) {
+        try {
+          await apiUploadTaskAttachments(data.task.id, taskFiles);
+        } catch {
+          // keep task creation successful even if attachment upload fails
+        }
+      }
+
       setTasks((prev) => [data.task, ...prev]);
-      setNewTitle("");
-      setNewDue("");
-      setNewStatus("todo");
+      setPlannerOpen(false);
+      setPlannerData(null);
+      setPendingTaskPayload(null);
+      setCreateTaskOpen(false);
+      setTaskTitle("Homework 1");
+      setTaskDescription("");
+      setTaskFiles([]);
+      setTaskDueDate("");
+      setTaskStatus("todo");
+      setEstimatedMinutes(60);
+      setPriority(3);
+      setSplittable(true);
+      setEstimateNotes("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setNotice("Task created.");
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to create task");
     }
   }
 
-  async function setTaskStatus(taskId, status) {
+  async function estimateMinutesWithAI() {
+    setEstimateNotes("");
+    setError("");
+    try {
+      setEstimateLoading(true);
+      const data = await apiEstimateTaskDuration({
+        title: taskTitle,
+        description: taskDescription,
+      });
+      const estimated = data?.estimate?.estimatedMinutes;
+      if (typeof estimated === "number") setEstimatedMinutes(estimated);
+      if (data?.estimate?.notes) setEstimateNotes(data.estimate.notes);
+    } catch (err) {
+      setError(
+        err?.response?.data?.error?.message || "Failed to estimate time",
+      );
+    } finally {
+      setEstimateLoading(false);
+    }
+  }
+
+  async function setExistingTaskStatus(taskId, status) {
     try {
       const data = await apiUpdateTask(taskId, { status });
       setTasks((prev) => prev.map((t) => (t.id === taskId ? data.task : t)));
@@ -248,7 +362,13 @@ export default function CourseDetail() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <Link to="/courses">← Back to courses</Link>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link to={`/tasks?courseId=${encodeURIComponent(id)}`}>Open tasks page →</Link>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => navigate(`/tasks?courseId=${id}&create=1`)}
+            >
+              Create task
+            </button>
             <button type="button" onClick={startLessonNote} disabled={creatingNote}>
               {creatingNote ? "Opening…" : "Start lesson / note"}
             </button>
@@ -307,8 +427,8 @@ export default function CourseDetail() {
               </div>
             </div>
 
-            {error ? <div style={{ marginTop: 14, color: "crimson" }}>{error}</div> : null}
-            {notice ? <div style={{ marginTop: 14, color: "#166534" }}>{notice}</div> : null}
+            {error ? <div className="notice notice-danger" style={{ marginTop: 14 }}>{error}</div> : null}
+            {notice ? <div className="notice notice-success" style={{ marginTop: 14 }}>{notice}</div> : null}
 
             <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16, marginTop: 16 }}>
               <div style={{ display: "grid", gap: 16 }}>
@@ -363,22 +483,165 @@ export default function CourseDetail() {
 
                 <div className="card">
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <h3 style={{ marginTop: 0, marginBottom: 0 }}>Tasks</h3>
+                    <div>
+                      <h3 style={{ marginTop: 0, marginBottom: 0 }}>Tasks</h3>
+                      <div className="small muted" style={{ marginTop: 4 }}>
+                        Create and plan tasks here for this course.
+                      </div>
+                    </div>
                     <span style={{ color: "#6b7280", fontSize: 14 }}>{tasks.length} total</span>
                   </div>
 
-                  <form onSubmit={onCreateTask} style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                    <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New task title" />
-                    <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 180px 160px" }}>
-                      <input type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)} />
-                      <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                        <option value="todo">To do</option>
-                        <option value="doing">Doing</option>
-                        <option value="done">Done</option>
-                      </select>
-                      <button type="submit">Add task</button>
-                    </div>
-                  </form>
+                  {createTaskOpen ? (
+                    <form
+                      onSubmit={onPlanTask}
+                      className="form-grid"
+                      style={{ marginTop: 12 }}
+                    >
+                      <label>
+                        Title
+                        <input
+                          value={taskTitle}
+                          onChange={(e) => setTaskTitle(e.target.value)}
+                        />
+                      </label>
+
+                      <label>
+                        Description
+                        <textarea
+                          value={taskDescription}
+                          onChange={(e) => setTaskDescription(e.target.value)}
+                          rows={5}
+                          placeholder="Add details, links, notes..."
+                        />
+                      </label>
+
+                      <label>
+                        Attachments
+                        <input
+                          ref={fileInputRef}
+                          id="course-task-attachments"
+                          type="file"
+                          multiple
+                          onChange={(e) => setTaskFiles(Array.from(e.target.files || []))}
+                          style={{ display: "none" }}
+                        />
+                        <label
+                          htmlFor="course-task-attachments"
+                          className="btn btn-ghost"
+                          style={{
+                            display: "inline-block",
+                            padding: "8px 16px",
+                            border: "1px solid #ccc",
+                            borderRadius: "4px",
+                            backgroundColor: "#f9f9f9",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Choose files
+                        </label>
+                        {taskFiles.length ? (
+                          <div className="small muted">
+                            Selected: {taskFiles.map((file) => file.name).join(", ")}
+                          </div>
+                        ) : null}
+                      </label>
+
+                      <div className="two-col three-col-on-desktop">
+                        <label>
+                          Due date
+                          <input
+                            type="date"
+                            value={taskDueDate}
+                            onChange={(e) => setTaskDueDate(e.target.value)}
+                          />
+                        </label>
+
+                        <label>
+                          Status
+                          <select
+                            value={taskStatus}
+                            onChange={(e) => setTaskStatus(e.target.value)}
+                          >
+                            <option value="todo">todo</option>
+                            <option value="doing">doing</option>
+                            <option value="done">done</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Course
+                          <input value={course.name || ""} disabled />
+                        </label>
+                      </div>
+
+                      <div className="two-col three-col-on-desktop">
+                        <label>
+                          Estimated minutes
+                          <div className="row" style={{ alignItems: "stretch" }}>
+                            <input
+                              type="number"
+                              min="1"
+                              max="1440"
+                              value={estimatedMinutes}
+                              onChange={(e) => setEstimatedMinutes(e.target.value)}
+                              style={{ flex: 1 }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-ghost"
+                              onClick={estimateMinutesWithAI}
+                              disabled={
+                                estimateLoading ||
+                                (!taskTitle.trim() && !taskDescription.trim())
+                              }
+                            >
+                              {estimateLoading ? "Estimating..." : "Estimate with AI"}
+                            </button>
+                          </div>
+                          {estimateNotes ? (
+                            <div className="small muted">{estimateNotes}</div>
+                          ) : null}
+                        </label>
+
+                        <label>
+                          Priority (1–5)
+                          <input
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={priority}
+                            onChange={(e) => setPriority(e.target.value)}
+                          />
+                        </label>
+
+                        <label>
+                          Splittable
+                          <select
+                            value={splittable ? "yes" : "no"}
+                            onChange={(e) => setSplittable(e.target.value === "yes")}
+                          >
+                            <option value="yes">yes</option>
+                            <option value="no">no</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      {plannerLoading ? (
+                        <div className="small muted">Loading planner…</div>
+                      ) : null}
+
+                      <div className="row" style={{ justifyContent: "flex-end" }}>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={!taskTitle.trim()}
+                        >
+                          Plan task
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
 
                   <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
                     {tasks.length === 0 ? (
@@ -387,27 +650,49 @@ export default function CourseDetail() {
                       tasks.map((task) => (
                         <div
                           key={task.id}
-                          style={{
-                            border: "1px solid #e5e7eb",
-                            borderRadius: 14,
-                            padding: 12,
-                            display: "grid",
-                            gap: 8,
-                          }}
+                          className="card"
+                          style={{ padding: 12, display: "grid", gap: 8 }}
                         >
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                            <div style={{ fontWeight: 700 }}>{task.title}</div>
-                            <button type="button" onClick={() => deleteTask(task.id)} style={{ color: "crimson" }}>
-                              Delete
+                            <div style={{ minWidth: 0 }}>
+                              <Link
+                                to={`/tasks/${task.id}`}
+                                style={{
+                                  fontWeight: 800,
+                                  color: "inherit",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                {task.title}
+                              </Link>
+                              <div className="small muted" style={{ marginTop: 4 }}>
+                                Due {task.due_date || "—"} · Status {task.status}
+                              </div>
+                            </div>
+                            <span className={`status-badge ${statusTone(task.status)}`}>
+                              {task.status}
+                            </span>
+                          </div>
+
+                          {task.description ? (
+                            <div className="small muted" style={{ whiteSpace: "pre-wrap" }}>
+                              {task.description}
+                            </div>
+                          ) : null}
+
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            <button className="btn" type="button" onClick={() => setExistingTaskStatus(task.id, "todo")}>
+                              todo
                             </button>
-                          </div>
-                          <div style={{ color: "#6b7280", fontSize: 14 }}>
-                            Due {task.due_date || "—"} · Status {task.status}
-                          </div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button type="button" onClick={() => setTaskStatus(task.id, "todo")}>To do</button>
-                            <button type="button" onClick={() => setTaskStatus(task.id, "doing")}>Doing</button>
-                            <button type="button" onClick={() => setTaskStatus(task.id, "done")}>Done</button>
+                            <button className="btn" type="button" onClick={() => setExistingTaskStatus(task.id, "doing")}>
+                              doing
+                            </button>
+                            <button className="btn" type="button" onClick={() => setExistingTaskStatus(task.id, "done")}>
+                              done
+                            </button>
+                            <button className="btn btn-danger" type="button" onClick={() => deleteTask(task.id)}>
+                              delete
+                            </button>
                           </div>
                         </div>
                       ))
@@ -419,7 +704,7 @@ export default function CourseDetail() {
               <div className="card">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <h3 style={{ marginTop: 0, marginBottom: 0 }}>Basic settings</h3>
-                  <button onClick={onDeleteCourse} style={{ color: "crimson" }}>
+                  <button onClick={onDeleteCourse} className="btn btn-danger">
                     Delete course
                   </button>
                 </div>
@@ -521,7 +806,7 @@ export default function CourseDetail() {
                     </div>
                   ) : null}
 
-                  <button type="submit">Save course</button>
+                  <button type="submit" className="btn btn-primary">Save course</button>
                 </form>
               </div>
             </div>
@@ -530,6 +815,45 @@ export default function CourseDetail() {
           <div style={{ marginTop: 14 }}>Course not found.</div>
         )}
       </div>
+
+      <TaskPlannerModal
+        open={plannerOpen}
+        taskTitle={pendingTaskPayload?.title ?? taskTitle}
+        taskDescription={pendingTaskPayload?.description ?? taskDescription}
+        taskDueDate={(pendingTaskPayload?.dueDate ?? taskDueDate) || null}
+        taskEstimatedMinutes={
+          Number(pendingTaskPayload?.estimatedMinutes ?? estimatedMinutes) || 60
+        }
+        suggestions={plannerData}
+        loading={plannerLoading}
+        currentStudyWindow={plannerStudyWindow}
+        onStudyWindowChange={async (windowValue) => {
+          setPlannerStudyWindow(windowValue);
+          setPlannerLoading(true);
+          setError("");
+          try {
+            const data = await apiTaskSuggestions({
+              dueDate: (pendingTaskPayload?.dueDate ?? taskDueDate) || null,
+              estimatedMinutes:
+                Number(pendingTaskPayload?.estimatedMinutes ?? estimatedMinutes) ||
+                60,
+              studyWindow: windowValue,
+            });
+            setPlannerData(data.suggestions);
+          } catch (err) {
+            setError(
+              err?.response?.data?.error?.message || "Failed to update planner",
+            );
+          } finally {
+            setPlannerLoading(false);
+          }
+        }}
+        onClose={() => {
+          setPlannerOpen(false);
+          setPlannerData(null);
+        }}
+        onConfirm={createTaskWithPickedSlot}
+      />
     </>
   );
 }

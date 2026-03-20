@@ -64,7 +64,17 @@ export default function Tasks() {
   useEffect(() => {
     const qs = new URLSearchParams(location.search);
     const qCourse = qs.get("courseId") || "";
-    if (qCourse) setFilterCourseId(qCourse);
+    const wantsCreate = qs.get("create") === "1";
+
+    setFilterCourseId(qCourse);
+    if (qCourse) setCourseId(qCourse);
+
+    if (wantsCreate) {
+      requestAnimationFrame(() => {
+        const form = document.getElementById("task-create-form");
+        if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
   }, [location.search]);
 
   async function refresh() {

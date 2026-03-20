@@ -25,7 +25,7 @@ function normalizeDateOnly(v) {
   if (v === null) return null;
   if (v === "") return null;
 
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, "0")}-${String(v.getUTCDate()).padStart(2, "0")}`;
 
   if (typeof v === "string") {
     const s = v.trim();
@@ -40,7 +40,7 @@ function normalizeDateOnly(v) {
 
 function serializeDateOnlyOut(v) {
   if (v === null || v === undefined || v === "") return v;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, "0")}-${String(v.getUTCDate()).padStart(2, "0")}`;
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) return v.slice(0, 10);
   return v;
 }

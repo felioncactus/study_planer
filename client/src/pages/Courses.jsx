@@ -1,67 +1,36 @@
-import React, { useEffect, useMemo, useState } from "react";
-import Navbar from "../components/Navbar";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  apiCreateCourse,
-  apiDeleteCourse,
-  apiListCourses,
-} from "../api/courses.api";
-
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+import Navbar from "../components/Navbar";
+import { apiDeleteCourse, apiListCourses } from "../api/courses.api";
 
 function fmtTime(t) {
-  if (!t) return "";
-  return String(t).slice(0, 5);
+  return t ? String(t).slice(0, 5) : "";
 }
 
-function formatTimeRange(start, end) {
-  if (!start && !end) return "";
-  if (start && end) return `${fmtTime(start)}–${fmtTime(end)}`;
-  return start ? `${fmtTime(start)}` : `${fmtTime(end)}`;
-}
-
-function fmtDateOnly(d) {
-  if (!d) return "";
-  return String(d).slice(0, 10);
-}
-
-function ymdToLabel(ymd) {
-  if (!ymd) return "";
-  return String(ymd).slice(0, 10);
+function metaForCourse(course) {
+  const parts = [];
+  if (course.day_of_week) parts.push(course.day_of_week);
+  if (course.start_time || course.end_time) {
+    const start = fmtTime(course.start_time);
+    const end = fmtTime(course.end_time);
+    parts.push(start && end ? `${start}–${end}` : start || end);
+  }
+  if (course.midterm_date) parts.push(`Midterm ${course.midterm_date}`);
+  if (course.final_date) parts.push(`Final ${course.final_date}`);
+  return parts;
 }
 
 export default function Courses() {
   const [courses, setCourses] = useState([]);
-
-  const [name, setName] = useState("");
-  const [color, setColor] = useState("#2563eb");
-  const [description, setDescription] = useState("");
-  const [dayOfWeek, setDayOfWeek] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [midtermDate, setMidtermDate] = useState("");
-  const [finalDate, setFinalDate] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [bannerFile, setBannerFile] = useState(null);
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
-  const imagePreview = useMemo(
-    () => (imageFile ? URL.createObjectURL(imageFile) : ""),
-    [imageFile],
-  );
-  const bannerPreview = useMemo(
-    () => (bannerFile ? URL.createObjectURL(bannerFile) : ""),
-    [bannerFile],
-  );
 
   async function refresh() {
     setError("");
     setLoading(true);
     try {
       const data = await apiListCourses();
-      setCourses(data.courses);
+      setCourses(data.courses || []);
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to load courses");
     } finally {
@@ -71,49 +40,7 @@ export default function Courses() {
 
   useEffect(() => {
     refresh();
-    return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
-      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function onCreate(e) {
-    e.preventDefault();
-    setError("");
-
-    try {
-      const fd = new FormData();
-      fd.append("name", name);
-      if (color) fd.append("color", color);
-      if (description) fd.append("description", description);
-      if (dayOfWeek) fd.append("dayOfWeek", dayOfWeek);
-      if (startTime) fd.append("startTime", startTime);
-      if (endTime) fd.append("endTime", endTime);
-      if (midtermDate) fd.append("midtermDate", fmtDateOnly(midtermDate));
-      if (finalDate) fd.append("finalDate", fmtDateOnly(finalDate));
-      if (imageFile) fd.append("image", imageFile);
-      if (bannerFile) fd.append("banner", bannerFile);
-
-      await apiCreateCourse(fd);
-
-      setName("");
-      setDescription("");
-      setDayOfWeek("");
-      setStartTime("");
-      setEndTime("");
-      setMidtermDate("");
-      setFinalDate("");
-      setImageFile(null);
-      setBannerFile(null);
-
-      await refresh();
-    } catch (err) {
-      setError(
-        err?.response?.data?.error?.message || "Failed to create course",
-      );
-    }
-  }
 
   async function onDelete(id) {
     setError("");
@@ -131,359 +58,99 @@ export default function Courses() {
     <>
       <Navbar />
       <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <h2 style={{ margin: 0 }}>Courses</h2>
-          <Link
-            to="/tasks"
-            className="btn btn-ghost"
-            style={{ marginLeft: 10 }}
-          >
-            View all tasks →
-          </Link>
+        <div className="page-header">
+          <div>
+            <div className="title">Courses</div>
+            <div className="small muted">
+              Open a course to manage notes, tasks, and settings together.
+            </div>
+          </div>
+          <div className="row" style={{ gap: 10 }}>
+            <Link to="/courses/new" className="btn btn-primary">
+              Create course
+            </Link>
+            <Link to="/tasks" className="btn btn-ghost">
+              Open all tasks
+            </Link>
+          </div>
         </div>
+
+        {error ? <div className="notice notice-danger">{error}</div> : null}
 
         <div className="card">
-          <div className="section-title">Create course</div>
-
-          <form onSubmit={onCreate} style={{ display: "grid", gap: 12 }}>
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                gridTemplateColumns: "1fr 1fr",
-              }}
-            >
-              <label style={{ display: "grid", gap: 6 }}>
-                Name
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="CS101"
-                />
-              </label>
-
-              <label style={{ display: "grid", gap: 6 }}>
-                Color
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                  />
-                  <code style={{ fontSize: 12 }}>{color}</code>
-                  <span
-                    style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: 999,
-                      background: color,
-                      border: "1px solid #ddd",
-                    }}
-                  />
-                </div>
-              </label>
-            </div>
-
-            <label style={{ display: "grid", gap: 6 }}>
-              Description
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="What is this course about?"
-              />
-            </label>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                gridTemplateColumns: "1fr 1fr 1fr",
-              }}
-            >
-              <label style={{ display: "grid", gap: 6 }}>
-                Day
-                <select
-                  value={dayOfWeek}
-                  onChange={(e) => setDayOfWeek(e.target.value)}
-                >
-                  <option value="">(optional)</option>
-                  {DAYS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ display: "grid", gap: 6 }}>
-                Start time
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </label>
-
-              <label style={{ display: "grid", gap: 6 }}>
-                End time
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                gridTemplateColumns: "1fr 1fr",
-              }}
-            >
-              <label style={{ display: "grid", gap: 6 }}>
-                Midterm
-                <input
-                  type="date"
-                  value={midtermDate}
-                  onChange={(e) => setMidtermDate(e.target.value)}
-                />
-              </label>
-              <label style={{ display: "grid", gap: 6 }}>
-                Final
-                <input
-                  type="date"
-                  value={finalDate}
-                  onChange={(e) => setFinalDate(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                gridTemplateColumns: "1fr 1fr",
-              }}
-            >
-              <label style={{ display: "grid", gap: 6 }}>
-                Course image (square)
-                <input
-                  id="imageFile"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  style={{ display: "none" }}
-                />
-                <label
-                  htmlFor="imageFile"
-                  className="btn btn-ghost"
-                  style={{
-                    display: "inline-block",
-                    padding: "8px 16px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor: "#f9f9f9",
-                    cursor: "pointer",
-                  }}
-                >
-                  Choose file
-                </label>
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="course preview"
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: 16,
-                      objectFit: "cover",
-                      border: "1px solid #eee",
-                    }}
-                  />
-                ) : null}
-              </label>
-
-              <label style={{ display: "grid", gap: 6 }}>
-                Banner (horizontal, like Twitter/LinkedIn)
-                <input
-                  id="bannerFile"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
-                  style={{ display: "none" }}
-                />
-                <label
-                  htmlFor="bannerFile"
-                  className="btn btn-ghost"
-                  style={{
-                    display: "inline-block",
-                    padding: "8px 16px",
-                    border: "1px solid #ccc",
-                    borderRadius: "4px",
-                    backgroundColor: "#f9f9f9",
-                    cursor: "pointer",
-                  }}
-                >
-                  Choose file
-                </label>
-                {bannerPreview ? (
-                  <img
-                    src={bannerPreview}
-                    alt="banner preview"
-                    style={{
-                      width: "100%",
-                      height: 72,
-                      borderRadius: 12,
-                      objectFit: "cover",
-                      border: "1px solid #eee",
-                    }}
-                  />
-                ) : null}
-              </label>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button type="submit" disabled={!name.trim()}>
-                Create
-              </button>
-              <div style={{ fontSize: 12, color: "#666" }}>
-                Tip: Upload a banner for the course page header.
-              </div>
-            </div>
-          </form>
-
-          {error && (
-            <div style={{ color: "crimson", marginTop: 10 }}>{error}</div>
-          )}
-        </div>
-
-        <div className="card" style={{ marginTop: 20 }}>
-          <h3 style={{ marginTop: 0 }}>Your courses</h3>
-
           {loading ? (
-            <div>Loading...</div>
+            <div>Loading…</div>
           ) : courses.length === 0 ? (
-            <div>No courses yet.</div>
+            <div className="small muted">
+              No courses yet. Create your first course to start adding notes and tasks.
+            </div>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
-              {courses.map((c) => {
-                const timeRange = formatTimeRange(c.start_time, c.end_time);
-                const metaParts = [
-                  c.day_of_week
-                    ? `${c.day_of_week}${timeRange ? " " : ""}`
-                    : "",
-                  timeRange,
-                  c.midterm_date
-                    ? `Midterm: ${ymdToLabel(c.midterm_date)}`
-                    : "",
-                  c.final_date ? `Final: ${ymdToLabel(c.final_date)}` : "",
-                ].filter(Boolean);
-
+              {courses.map((course) => {
+                const metaParts = metaForCourse(course);
                 return (
                   <div
-                    key={c.id}
+                    key={course.id}
                     style={{
-                      border: "1px solid #e7e7e7",
+                      display: "flex",
+                      gap: 14,
+                      alignItems: "stretch",
+                      border: "1px solid #e5e7eb",
                       borderRadius: 16,
                       overflow: "hidden",
-                      background: "#fff",
                     }}
                   >
                     <div
                       style={{
-                        height: 84,
-                        backgroundImage: c.banner_url
-                          ? `url(${c.banner_url})`
-                          : "none",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        backgroundColor: c.banner_url ? undefined : "#f3f4f6",
-                        position: "relative",
+                        width: 8,
+                        background: course.color || "#cbd5e1",
+                        flex: "0 0 auto",
                       }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: 14,
-                          bottom: -22,
-                          width: 56,
-                          height: 56,
-                          borderRadius: 18,
-                          border: "3px solid white",
-                          overflow: "hidden",
-                          background: c.color || "#e5e7eb",
-                          display: "grid",
-                          placeItems: "center",
-                        }}
-                      >
-                        {c.image_url ? (
-                          <img
-                            src={c.image_url}
-                            alt={c.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          <span style={{ fontWeight: 800, color: "#111" }}>
-                            {(c.name || "?").slice(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
+                    />
                     <div
                       style={{
-                        padding: "34px 14px 12px 14px",
+                        flex: 1,
+                        padding: 14,
                         display: "flex",
-                        gap: 12,
                         alignItems: "flex-start",
+                        gap: 12,
                       }}
                     >
-                      <div style={{ minWidth: 0 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: 8,
+                            gap: 10,
+                            flexWrap: "wrap",
                           }}
                         >
                           <Link
-                            to={`/courses/${c.id}`}
+                            to={`/courses/${course.id}`}
                             style={{
                               fontWeight: 800,
-                              fontSize: 16,
-                              color: "#111",
+                              fontSize: 18,
+                              textDecoration: "none",
+                              color: "inherit",
                             }}
                           >
-                            {c.name}
+                            {course.name}
                           </Link>
-                          {c.color ? (
+                          {course.color ? (
                             <span
-                              title={c.color}
+                              title={course.color}
                               style={{
                                 width: 10,
                                 height: 10,
                                 borderRadius: 999,
-                                background: c.color,
+                                background: course.color,
                                 border: "1px solid #ddd",
                               }}
                             />
                           ) : null}
                         </div>
 
-                        {c.description ? (
+                        {course.description ? (
                           <div
                             style={{
                               marginTop: 6,
@@ -492,7 +159,7 @@ export default function Courses() {
                               whiteSpace: "pre-wrap",
                             }}
                           >
-                            {c.description}
+                            {course.description}
                           </div>
                         ) : null}
 
@@ -509,12 +176,21 @@ export default function Courses() {
                         ) : null}
                       </div>
 
-                      <button
-                        onClick={() => onDelete(c.id)}
-                        style={{ marginLeft: "auto" }}
-                      >
-                        Delete
-                      </button>
+                      <div className="row" style={{ gap: 8 }}>
+                        <Link
+                          to={`/courses/${course.id}`}
+                          className="btn btn-ghost"
+                        >
+                          Open
+                        </Link>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          onClick={() => onDelete(course.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );

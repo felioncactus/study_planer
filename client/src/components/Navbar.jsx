@@ -55,14 +55,11 @@ export default function Navbar() {
               <NavLink to="/courses" className={linkClass}>
                 Courses
               </NavLink>
-              <NavLink to="/tasks" className={linkClass}>
-                Tasks
-              </NavLink>
               <NavLink to="/activities" className={linkClass}>
                 Activities
               </NavLink>
               <NavLink to="/week" className={linkClass}>
-                Weekly
+                Daily
               </NavLink>
               <NavLink to="/friends" className={linkClass}>
                 <span className="nav-link-with-badge">

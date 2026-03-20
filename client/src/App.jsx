@@ -11,6 +11,8 @@ import Activities from "./pages/Activities";
 import TaskDetail from "./pages/TaskDetail";
 import Weekly from "./pages/Weekly";
 import Settings from "./pages/Settings";
+import CreateCourse from "./pages/CreateCourse";
+import NoteEditor from "./pages/NoteEditor";
 import Friends from "./pages/Friends";
 import FriendChat from "./pages/FriendChat";
 
@@ -43,6 +45,15 @@ export default function App() {
       />
 
       <Route
+        path="/courses/new"
+        element={
+          <ProtectedRoute>
+            <CreateCourse />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/courses/:id"
         element={
           <ProtectedRoute>
@@ -50,6 +61,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/notes/:noteId"
+        element={
+          <ProtectedRoute>
+            <NoteEditor />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/tasks"
         element={
