@@ -26,7 +26,24 @@ function normalizeDow(raw) {
   return map[key] ?? null;
 }
 
-function ymdToDateUtc(ymd) {
+function dateOnlyToYmd(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return `${value.getUTCFullYear()}-${pad2(value.getUTCMonth() + 1)}-${pad2(value.getUTCDate())}`;
+  }
+
+  const s = String(value).trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
+
+  return s;
+}
+
+function ymdToDateUtc(value) {
+  const ymd = dateOnlyToYmd(value);
+  if (!ymd) return null;
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
 }
@@ -76,13 +93,14 @@ export async function listCalendarEventsForUser(userId, query) {
   const events = [];
 
   for (const t of tasks) {
-    if (!t.due_date) continue;
+    const dueDateYmd = dateOnlyToYmd(t.due_date);
+    if (!dueDateYmd) continue;
     events.push({
       id: `task:${t.id}`,
       type: "task",
       title: t.title,
-      start: t.due_date, // YYYY-MM-DD (all day)
-      end: t.due_date,
+      start: dueDateYmd,
+      end: dueDateYmd,
       allDay: true,
       meta: {
         taskId: t.id,
@@ -95,24 +113,26 @@ export async function listCalendarEventsForUser(userId, query) {
 
   // Exams as all-day events
   for (const c of courses) {
-    if (c.midterm_date) {
+    const midtermDateYmd = dateOnlyToYmd(c.midterm_date);
+    if (midtermDateYmd) {
       events.push({
-        id: `exam:midterm:${c.id}:${c.midterm_date}`,
+        id: `exam:midterm:${c.id}:${midtermDateYmd}`,
         type: "exam",
         title: `${c.name} • Midterm`,
-        start: c.midterm_date,
-        end: c.midterm_date,
+        start: midtermDateYmd,
+        end: midtermDateYmd,
         allDay: true,
         meta: { courseId: c.id, kind: "midterm", color: c.color ?? null },
       });
     }
-    if (c.final_date) {
+    const finalDateYmd = dateOnlyToYmd(c.final_date);
+    if (finalDateYmd) {
       events.push({
-        id: `exam:final:${c.id}:${c.final_date}`,
+        id: `exam:final:${c.id}:${finalDateYmd}`,
         type: "exam",
         title: `${c.name} • Final`,
-        start: c.final_date,
-        end: c.final_date,
+        start: finalDateYmd,
+        end: finalDateYmd,
         allDay: true,
         meta: { courseId: c.id, kind: "final", color: c.color ?? null },
       });
@@ -131,9 +151,12 @@ export async function listCalendarEventsForUser(userId, query) {
     const et = timeToHm(c.end_time);
     if (!st || !et) continue;
 
-    // iterate each day in window (date-only)
+    const courseStart = c.begins_on ? ymdToDateUtc(c.begins_on) : null;
+    const courseEnd = c.ends_on ? ymdToDateUtc(c.ends_on) : null;
+
     for (let d = new Date(startUtc); d <= endUtc; d = addDays(d, 1)) {
-      // JS getUTCDay matches 0=Sun..6=Sat
+      if (courseStart && d < courseStart) continue;
+      if (courseEnd && d > courseEnd) continue;
       if (d.getUTCDay() !== dow) continue;
 
       const ymd = dateUtcToYmd(d);
@@ -147,7 +170,12 @@ export async function listCalendarEventsForUser(userId, query) {
         start: startIso,
         end: endIso,
         allDay: false,
-        meta: { courseId: c.id, color: c.color ?? null },
+        meta: {
+          courseId: c.id,
+          color: c.color ?? null,
+          beginsOn: dateOnlyToYmd(c.begins_on),
+          endsOn: dateOnlyToYmd(c.ends_on),
+        },
       });
     }
   }

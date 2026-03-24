@@ -5,6 +5,7 @@ import {
   createActivityForUser,
   updateActivityForUser,
   deleteActivityForUser,
+  aiPlanActivityForUser,
 } from "../services/activities.service.js";
 
 export const listActivitiesHandler = asyncHandler(async (req, res) => {
@@ -30,4 +31,10 @@ export const updateActivityHandler = asyncHandler(async (req, res) => {
 export const deleteActivityHandler = asyncHandler(async (req, res) => {
   await deleteActivityForUser(req.user.id, req.params.id);
   res.status(204).send();
+});
+
+
+export const aiPlanActivityHandler = asyncHandler(async (req, res) => {
+  const plan = await aiPlanActivityForUser(req.user.id, req.body || {});
+  res.json({ plan });
 });

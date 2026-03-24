@@ -18,21 +18,21 @@ const emptyToNull = (v) => {
   return v;
 };
 
-// Accept either YYYY-MM-DD or an ISO datetime string and normalize to YYYY-MM-DD.
-// Also supports Date objects. Empty string becomes null (to clear the field).
 function normalizeDateOnly(v) {
   if (v === undefined) return undefined;
   if (v === null) return null;
   if (v === "") return null;
 
-  if (v instanceof Date) return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, "0")}-${String(v.getUTCDate()).padStart(2, "0")}`;
+  if (v instanceof Date) {
+    return `${v.getUTCFullYear()}-${String(v.getUTCMonth() + 1).padStart(2, "0")}-${String(v.getUTCDate()).padStart(2, "0")}`;
+  }
 
   if (typeof v === "string") {
     const s = v.trim();
     if (s === "") return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.slice(0, 10);
-    return s; // let validation handle it
+    return s;
   }
 
   return v;
@@ -49,6 +49,8 @@ function serializeCourse(course) {
   if (!course) return course;
   return {
     ...course,
+    begins_on: serializeDateOnlyOut(course.begins_on),
+    ends_on: serializeDateOnlyOut(course.ends_on),
     midterm_date: serializeDateOnlyOut(course.midterm_date),
     final_date: serializeDateOnlyOut(course.final_date),
   };
@@ -56,18 +58,9 @@ function serializeCourse(course) {
 
 const dayEnum = z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 
-const timeString = z
-  .string()
-  .regex(/^\d{2}:\d{2}$/, "Time must be HH:MM")
-  .transform((s) => s);
+const timeString = z.string().regex(/^\d{2}:\d{2}$/, "Time must be HH:MM").transform((s) => s);
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD").transform((s) => s);
 
-const dateString = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
-  .transform((s) => s);
-
-// For updates we want to support clearing optional fields (send "" -> null)
-// and still reject invalid formats. For create, optional fields can be omitted.
 const courseUpsertSchema = z.object({
   name: z.preprocess(emptyToUndefined, z.string().min(1).max(100)),
   color: z.preprocess(emptyToNull, z.string().max(50).nullable()).optional(),
@@ -75,10 +68,20 @@ const courseUpsertSchema = z.object({
   dayOfWeek: z.preprocess(emptyToNull, dayEnum.nullable()).optional(),
   startTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
   endTime: z.preprocess(emptyToNull, timeString.nullable()).optional(),
+  beginsOn: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
+  endsOn: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
   midtermDate: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
   finalDate: z.preprocess(normalizeDateOnly, dateString.nullable()).optional(),
   imageUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
   bannerUrl: z.preprocess(emptyToNull, z.string().max(500).nullable()).optional(),
+}).superRefine((value, ctx) => {
+  if (value.beginsOn && value.endsOn && value.beginsOn > value.endsOn) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endsOn"],
+      message: "Course end date must be on or after the begin date",
+    });
+  }
 });
 
 function toNull(v) {
@@ -104,6 +107,8 @@ export async function createCourseForUser(userId, input) {
     dayOfWeek: input?.dayOfWeek ?? input?.day_of_week,
     startTime: input?.startTime ?? input?.start_time,
     endTime: input?.endTime ?? input?.end_time,
+    beginsOn: input?.beginsOn ?? input?.begins_on,
+    endsOn: input?.endsOn ?? input?.ends_on,
     midtermDate: input?.midtermDate ?? input?.midterm_date,
     finalDate: input?.finalDate ?? input?.final_date,
     imageUrl: input?.imageUrl ?? input?.image_url,
@@ -123,6 +128,8 @@ export async function createCourseForUser(userId, input) {
       dayOfWeek: toNull(parsed.data.dayOfWeek),
       startTime: toNull(parsed.data.startTime),
       endTime: toNull(parsed.data.endTime),
+      beginsOn: toNull(parsed.data.beginsOn),
+      endsOn: toNull(parsed.data.endsOn),
       midtermDate: toNull(parsed.data.midtermDate),
       finalDate: toNull(parsed.data.finalDate),
       imageUrl: toNull(parsed.data.imageUrl),
@@ -149,6 +156,8 @@ export async function updateCourseForUser(userId, courseId, input) {
     dayOfWeek: input?.dayOfWeek ?? input?.day_of_week,
     startTime: input?.startTime ?? input?.start_time,
     endTime: input?.endTime ?? input?.end_time,
+    beginsOn: input?.beginsOn ?? input?.begins_on,
+    endsOn: input?.endsOn ?? input?.ends_on,
     midtermDate: input?.midtermDate ?? input?.midterm_date,
     finalDate: input?.finalDate ?? input?.final_date,
     imageUrl: input?.imageUrl ?? input?.image_url,
@@ -169,6 +178,8 @@ export async function updateCourseForUser(userId, courseId, input) {
       dayOfWeek: toNull(parsed.data.dayOfWeek),
       startTime: toNull(parsed.data.startTime),
       endTime: toNull(parsed.data.endTime),
+      beginsOn: toNull(parsed.data.beginsOn),
+      endsOn: toNull(parsed.data.endsOn),
       midtermDate: toNull(parsed.data.midtermDate),
       finalDate: toNull(parsed.data.finalDate),
       imageUrlProvided: hasImageUrl,

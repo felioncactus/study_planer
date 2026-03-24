@@ -67,6 +67,9 @@ export default function Navbar() {
                   {friendBadge > 0 ? <span className="nav-badge">{friendBadge}</span> : null}
                 </span>
               </NavLink>
+              <NavLink to="/statistics" className={linkClass}>
+                Statistics
+              </NavLink>
               <NavLink to="/settings" className={linkClass}>
                 Settings
               </NavLink>

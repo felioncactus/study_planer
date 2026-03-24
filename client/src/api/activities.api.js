@@ -23,3 +23,9 @@ export async function apiGetActivity(activityId) {
   const res = await http.get(`/activities/${activityId}`);
   return res.data; // { activity }
 }
+
+
+export async function apiAiPlanActivity(payload) {
+  const res = await http.post("/activities/ai-plan", payload);
+  return res.data; // { plan }
+}

@@ -1,6 +1,6 @@
 import { pool } from "../config/db.js";
 
-const COURSE_SELECT = `id, user_id, name, color, description, day_of_week, start_time, end_time, midterm_date, final_date, image_url, banner_url, created_at, updated_at`;
+const COURSE_SELECT = `id, user_id, name, color, description, day_of_week, start_time, end_time, begins_on, ends_on, midterm_date, final_date, image_url, banner_url, created_at, updated_at`;
 
 export async function listCoursesByUserId(userId) {
   const result = await pool.query(
@@ -32,14 +32,16 @@ export async function createCourse({
   dayOfWeek,
   startTime,
   endTime,
+  beginsOn,
+  endsOn,
   midtermDate,
   finalDate,
   imageUrl,
   bannerUrl,
 }) {
   const result = await pool.query(
-    `INSERT INTO courses (user_id, name, color, description, day_of_week, start_time, end_time, midterm_date, final_date, image_url, banner_url)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `INSERT INTO courses (user_id, name, color, description, day_of_week, start_time, end_time, begins_on, ends_on, midterm_date, final_date, image_url, banner_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING ${COURSE_SELECT};`,
     [
       userId,
@@ -49,6 +51,8 @@ export async function createCourse({
       dayOfWeek ?? null,
       startTime ?? null,
       endTime ?? null,
+      beginsOn ?? null,
+      endsOn ?? null,
       midtermDate ?? null,
       finalDate ?? null,
       imageUrl ?? null,
@@ -67,6 +71,8 @@ export async function updateCourse({
   dayOfWeek,
   startTime,
   endTime,
+  beginsOn,
+  endsOn,
   midtermDate,
   finalDate,
   imageUrlProvided,
@@ -83,10 +89,12 @@ export async function updateCourse({
        day_of_week = $6,
        start_time = $7,
        end_time = $8,
-       midterm_date = $9,
-       final_date = $10,
-       image_url = CASE WHEN $11 THEN $12 ELSE image_url END,
-       banner_url = CASE WHEN $13 THEN $14 ELSE banner_url END,
+       begins_on = $9,
+       ends_on = $10,
+       midterm_date = $11,
+       final_date = $12,
+       image_url = CASE WHEN $13 THEN $14 ELSE image_url END,
+       banner_url = CASE WHEN $15 THEN $16 ELSE banner_url END,
        updated_at = NOW()
      WHERE id = $1 AND user_id = $2
      RETURNING ${COURSE_SELECT};`,
@@ -99,6 +107,8 @@ export async function updateCourse({
       dayOfWeek ?? null,
       startTime ?? null,
       endTime ?? null,
+      beginsOn ?? null,
+      endsOn ?? null,
       midtermDate ?? null,
       finalDate ?? null,
       !!imageUrlProvided,

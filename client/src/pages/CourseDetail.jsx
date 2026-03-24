@@ -86,6 +86,8 @@ export default function CourseDetail() {
   const [dayOfWeek, setDayOfWeek] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [beginsOn, setBeginsOn] = useState("");
+  const [endsOn, setEndsOn] = useState("");
   const [midtermDate, setMidtermDate] = useState("");
   const [finalDate, setFinalDate] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -164,6 +166,8 @@ export default function CourseDetail() {
     setDayOfWeek(course.day_of_week || "");
     setStartTime(fmtTime(course.start_time));
     setEndTime(fmtTime(course.end_time));
+    setBeginsOn(fmtDateOnly(course.begins_on));
+    setEndsOn(fmtDateOnly(course.ends_on));
     setMidtermDate(fmtDateOnly(course.midterm_date));
     setFinalDate(fmtDateOnly(course.final_date));
     setImageFile(null);
@@ -191,6 +195,8 @@ export default function CourseDetail() {
       fd.append("dayOfWeek", dayOfWeek || "");
       fd.append("startTime", startTime || "");
       fd.append("endTime", endTime || "");
+      fd.append("beginsOn", fmtDateOnly(beginsOn) || "");
+      fd.append("endsOn", fmtDateOnly(endsOn) || "");
       fd.append("midtermDate", fmtDateOnly(midtermDate) || "");
       fd.append("finalDate", fmtDateOnly(finalDate) || "");
       if (imageFile) fd.append("image", imageFile);
@@ -419,6 +425,8 @@ export default function CourseDetail() {
                         {formatTimeRange(course.start_time, course.end_time)}
                       </Pill>
                     ) : null}
+                    {course.begins_on ? <Pill>Begins: {course.begins_on}</Pill> : null}
+                    {course.ends_on ? <Pill>Ends: {course.ends_on}</Pill> : null}
                     {course.midterm_date ? <Pill>Midterm: {course.midterm_date}</Pill> : null}
                     {course.final_date ? <Pill>Final: {course.final_date}</Pill> : null}
                     {course.color ? <Pill>{course.color}</Pill> : null}
@@ -755,6 +763,18 @@ export default function CourseDetail() {
                     <label style={{ display: "grid", gap: 6 }}>
                       End time
                       <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                    </label>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
+                    <label style={{ display: "grid", gap: 6 }}>
+                      Course begins
+                      <input type="date" value={beginsOn} onChange={(e) => setBeginsOn(e.target.value)} />
+                    </label>
+
+                    <label style={{ display: "grid", gap: 6 }}>
+                      Course ends
+                      <input type="date" min={beginsOn || undefined} value={endsOn} onChange={(e) => setEndsOn(e.target.value)} />
                     </label>
                   </div>
 

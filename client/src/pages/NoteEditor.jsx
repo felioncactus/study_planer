@@ -90,6 +90,53 @@ function ensureEditorHtml(value) {
   return clean && clean.trim() ? clean : "<p></p>";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildPrintableNoteHtml({ title, contentHtml }) {
+  return `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(title || "Note")}</title>
+        <style>
+          :root { color-scheme: light; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: white; color: #111827; }
+          body { font-family: Arial, Helvetica, sans-serif; padding: 40px; }
+          h1 { margin: 0 0 8px; font-size: 28px; }
+          .meta { color: #6b7280; margin-bottom: 24px; font-size: 14px; }
+          article { font-size: 15px; }
+          p, li { line-height: 1.7; }
+          h2, h3, h4 { margin-top: 24px; }
+          blockquote { margin: 16px 0; padding-left: 16px; border-left: 4px solid #d1d5db; color: #374151; }
+          table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+          td, th { border: 1px solid #d1d5db; padding: 8px; text-align: left; vertical-align: top; }
+          img { max-width: 100%; height: auto; }
+          pre, code { white-space: pre-wrap; word-break: break-word; }
+          @page { size: auto; margin: 16mm; }
+          @media print {
+            html, body { background: white !important; }
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${escapeHtml(title || "Untitled note")}</h1>
+        <div class="meta">Exported ${escapeHtml(new Date().toLocaleString())}</div>
+        <article>${contentHtml}</article>
+      </body>
+    </html>
+  `;
+}
+
+
 export default function NoteEditor() {
   const { noteId } = useParams();
   const navigate = useNavigate();
@@ -294,39 +341,67 @@ export default function NoteEditor() {
   }
 
   function exportPdf() {
-    const printableHtml = stripAiMarkup(contentHtml);
-    const popup = window.open("", "_blank", "noopener,noreferrer,width=1000,height=800");
-    if (!popup) {
-      setError("Popup blocked. Please allow popups to export PDF.");
-      return;
-    }
+    setError("");
+    setNotice("");
 
-    popup.document.write(`
-      <html>
-        <head>
-          <title>${title || "Note"}</title>
-          <style>
-            body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #111827; }
-            h1 { margin-bottom: 8px; }
-            .meta { color: #6b7280; margin-bottom: 24px; }
-            p, li { line-height: 1.65; }
-            blockquote { margin: 16px 0; padding-left: 16px; border-left: 4px solid #d1d5db; color: #374151; }
-            table { border-collapse: collapse; width: 100%; }
-            td, th { border: 1px solid #d1d5db; padding: 8px; }
-            img { max-width: 100%; }
-            @media print { body { padding: 24px; } }
-          </style>
-        </head>
-        <body>
-          <h1>${title || "Untitled note"}</h1>
-          <div class="meta">Exported ${new Date().toLocaleString()}</div>
-          <article>${printableHtml}</article>
-        </body>
-      </html>
-    `);
-    popup.document.close();
-    popup.focus();
-    popup.print();
+    const printableHtml = buildPrintableNoteHtml({
+      title,
+      contentHtml: stripAiMarkup(contentHtml),
+    });
+
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+
+    const cleanup = () => {
+      window.setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      }, 1000);
+    };
+
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow;
+      if (!frameWindow) {
+        cleanup();
+        setError("Failed to open print preview.");
+        return;
+      }
+
+      frameWindow.focus();
+      window.setTimeout(() => {
+        try {
+          frameWindow.print();
+          setNotice("Print dialog opened. Choose Save as PDF to export the note.");
+        } catch {
+          setError("Failed to open the print dialog.");
+        } finally {
+          cleanup();
+        }
+      }, 250);
+    };
+
+    document.body.appendChild(iframe);
+
+    try {
+      iframe.srcdoc = printableHtml;
+    } catch {
+      const frameDocument = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!frameDocument) {
+        cleanup();
+        setError("Failed to prepare the PDF export.");
+        return;
+      }
+
+      frameDocument.open();
+      frameDocument.write(printableHtml);
+      frameDocument.close();
+    }
   }
 
   return (

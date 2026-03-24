@@ -15,6 +15,9 @@ function metaForCourse(course) {
     const end = fmtTime(course.end_time);
     parts.push(start && end ? `${start}–${end}` : start || end);
   }
+  if (course.begins_on || course.ends_on) {
+    parts.push(`Runs ${course.begins_on || "?"} → ${course.ends_on || "?"}`);
+  }
   if (course.midterm_date) parts.push(`Midterm ${course.midterm_date}`);
   if (course.final_date) parts.push(`Final ${course.final_date}`);
   return parts;

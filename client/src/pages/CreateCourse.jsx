@@ -18,6 +18,8 @@ export default function CreateCourse() {
   const [dayOfWeek, setDayOfWeek] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [beginsOn, setBeginsOn] = useState("");
+  const [endsOn, setEndsOn] = useState("");
   const [midtermDate, setMidtermDate] = useState("");
   const [finalDate, setFinalDate] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -47,6 +49,8 @@ export default function CreateCourse() {
       if (dayOfWeek) fd.append("dayOfWeek", dayOfWeek);
       if (startTime) fd.append("startTime", startTime);
       if (endTime) fd.append("endTime", endTime);
+      if (beginsOn) fd.append("beginsOn", dateOnly(beginsOn));
+      if (endsOn) fd.append("endsOn", dateOnly(endsOn));
       if (midtermDate) fd.append("midtermDate", dateOnly(midtermDate));
       if (finalDate) fd.append("finalDate", dateOnly(finalDate));
       if (imageFile) fd.append("image", imageFile);
@@ -168,6 +172,29 @@ export default function CreateCourse() {
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div
+              style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}
+            >
+              <label style={{ display: "grid", gap: 6 }}>
+                Course begins
+                <input
+                  type="date"
+                  value={beginsOn}
+                  onChange={(e) => setBeginsOn(e.target.value)}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 6 }}>
+                Course ends
+                <input
+                  type="date"
+                  value={endsOn}
+                  min={beginsOn || undefined}
+                  onChange={(e) => setEndsOn(e.target.value)}
                 />
               </label>
             </div>

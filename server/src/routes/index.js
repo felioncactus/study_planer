@@ -10,6 +10,7 @@ import { notificationsRouter } from "./notifications.routes.js";
 import { calendarRouter } from "./calendar.routes.js";
 import { activitiesRouter } from "./activities.routes.js";
 import { courseNotesRouter } from "./courseNotes.routes.js";
+import { statsRouter } from "./stats.routes.js";
 
 export const apiRouter = Router();
 
@@ -31,3 +32,4 @@ apiRouter.use("/messages", messagesRouter);
 apiRouter.use("/notifications", notificationsRouter);
 
 apiRouter.use("/assistant", assistantRouter);
+apiRouter.use("/stats", statsRouter);

@@ -15,6 +15,7 @@ import CreateCourse from "./pages/CreateCourse";
 import NoteEditor from "./pages/NoteEditor";
 import Friends from "./pages/Friends";
 import FriendChat from "./pages/FriendChat";
+import Statistics from "./pages/Statistics";
 
 export default function App() {
   return (
@@ -109,6 +110,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Friends />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/statistics"
+        element={
+          <ProtectedRoute>
+            <Statistics />
           </ProtectedRoute>
         }
       />

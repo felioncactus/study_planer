@@ -56,7 +56,7 @@
 
 /* Card */
 .card {
-  background: white;
+  background: linear-gradient(180deg, var(--card-2), var(--card));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -388,10 +388,7 @@ html[data-theme="light"] .bg-texture::before {
   padding: 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-}
-html[data-theme="light"] .row-item {
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--surface-soft);
 }
 .row-left {
   display: grid;
@@ -443,7 +440,7 @@ html[data-theme="light"] .progress {
   padding: 18px;
   border-radius: var(--radius);
   border: 1px dashed var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-soft);
 }
 html[data-theme="light"] .empty {
   background: rgba(0, 0, 0, 0.02);
@@ -831,4 +828,206 @@ html[data-theme="light"] .empty {
   border-radius: 8px;
   padding: 1px 6px;
   font-size: 13px;
+}
+
+
+/* Daily page */
+.daily-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.daily-overview {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) 1fr;
+  gap: 16px;
+}
+
+.daily-summary-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.daily-summary-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.daily-summary-label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.daily-summary-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.daily-allday-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.daily-allday-card {
+  min-height: 108px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.daily-allday-title {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.daily-timeline {
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.daily-timeline-scroll {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.daily-timeline-grid {
+  position: relative;
+  min-width: 760px;
+}
+
+.daily-rail {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 86px;
+  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.08));
+}
+html[data-theme="light"] .daily-rail {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.8));
+}
+
+.daily-grid {
+  position: relative;
+  margin-left: 86px;
+}
+
+.daily-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+}
+
+.daily-hour-label {
+  position: absolute;
+  left: 16px;
+  top: -10px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--card-2);
+  border-radius: 999px;
+  z-index: 4;
+}
+
+.daily-events {
+  position: absolute;
+  inset: 0;
+  padding: 10px 14px 10px 16px;
+}
+
+.daily-empty {
+  position: absolute;
+  inset: 20px 18px 20px 18px;
+  border-radius: 20px;
+  border: 1px dashed var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+
+.daily-event {
+  position: absolute;
+  min-width: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.16);
+  backdrop-filter: blur(8px);
+}
+
+.daily-event-inner {
+  height: 100%;
+  padding: 12px 12px 10px;
+  border-radius: inherit;
+  border-left: 5px solid transparent;
+  border: 1px solid transparent;
+}
+
+.daily-event-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.daily-event-title {
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.daily-event-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.daily-now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px dashed rgba(244, 63, 94, 0.65);
+  z-index: 3;
+}
+
+.daily-now-dot {
+  position: absolute;
+  left: -5px;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(244, 63, 94);
+}
+
+@media (max-width: 960px) {
+  .daily-overview {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .page-header {
+    align-items: flex-start;
+  }
 }

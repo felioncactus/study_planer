@@ -83,3 +83,23 @@ export async function deleteActivityForUser(userId, id) {
   const deletedId = await deleteActivity(userId, id);
   if (!deletedId) throw notFound("Activity not found", "ACTIVITY_NOT_FOUND");
 }
+
+
+export async function aiPlanActivityForUser(userId, body) {
+  const title = String(body?.title || "").trim();
+  const description = typeof body?.description === "string" ? body.description : "";
+  const estimatedMinutes = Number(body?.estimatedMinutes ?? body?.estimated_minutes ?? 60);
+  const preferredDate = body?.preferredDate ?? body?.preferred_date ?? null;
+
+  if (!title) throw badRequest("title is required", "VALIDATION_ERROR");
+
+  const { aiPlanTaskForUser } = await import("./aiPlanner.service.js");
+  return await aiPlanTaskForUser(userId, {
+    title,
+    description,
+    dueDate: preferredDate,
+    estimatedMinutes,
+    horizonDays: body?.horizonDays ?? 7,
+    studyWindow: body?.studyWindow,
+  });
+}
