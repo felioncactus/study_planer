@@ -1,3 +1,4 @@
+
 import { http } from "./http";
 
 export async function fetchMessages(friendId) {
@@ -5,7 +6,12 @@ export async function fetchMessages(friendId) {
   return data;
 }
 
-export async function sendMessage(friendId, body) {
-  const { data } = await http.post(`/messages/${friendId}`, { body });
+export async function sendMessage(friendId, body, attachments = []) {
+  const form = new FormData();
+  form.append("body", body);
+  for (const file of attachments) {
+    form.append("attachments", file);
+  }
+  const { data } = await http.post(`/messages/${friendId}`, form);
   return data;
 }

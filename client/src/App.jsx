@@ -124,7 +124,23 @@ export default function App() {
       />
 
       <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <FriendChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/chat/:friendId"
+        element={
+          <ProtectedRoute>
+            <FriendChat />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/conversations/:chatId"
         element={
           <ProtectedRoute>
             <FriendChat />

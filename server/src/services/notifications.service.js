@@ -1,11 +1,14 @@
+
 import { countPendingInboundForUser } from "../repositories/friends.repo.js";
-import { countUnreadMessagesForUser } from "../repositories/messages.repo.js";
+import { listChatsForUser } from "../repositories/chats.repo.js";
 
 export async function getFriendNotifications(userId) {
-  const [pendingRequests, unreadMessages] = await Promise.all([
+  const [pendingRequests, chats] = await Promise.all([
     countPendingInboundForUser(userId),
-    countUnreadMessagesForUser(userId),
+    listChatsForUser(userId),
   ]);
+
+  const unreadMessages = chats.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
 
   return {
     pendingRequests,

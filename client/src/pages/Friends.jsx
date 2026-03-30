@@ -124,11 +124,16 @@ export default function Friends() {
     <>
       <Navbar />
       <div className="container" style={{ paddingTop: 18, paddingBottom: 32 }}>
-      <div className="page-header" style={{ marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>Friends</h2>
-        <p className="muted" style={{ marginTop: 6 }}>
-          Add friends by email, accept requests, block users, and chat with accepted friends.
-        </p>
+      <div className="page-header" style={{ marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Friends</h2>
+          <p className="muted" style={{ marginTop: 6 }}>
+            Add friends by email, accept requests, block users, open direct chats, create groups, and message yourself.
+          </p>
+        </div>
+        <Link className="btn" to="/chat">
+          Open chat page
+        </Link>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -218,7 +223,7 @@ export default function Friends() {
 
           {data.accepted.length > 0 ? (
             <section>
-              <h3 style={{ margin: "0 0 8px 0" }}>Friends</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8 }}><h3 style={{ margin: 0 }}>Friends</h3><Link className="btn btn-ghost" to="/chat/self">Open self chat</Link></div>
               <div style={{ display: "grid", gap: 10 }}>
                 {data.accepted.map((r) => (
                   <FriendCard

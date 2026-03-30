@@ -1,8 +1,10 @@
-import { badRequest, forbidden } from "../utils/httpError.js";
-import { getFriendship } from "../repositories/friends.repo.js";
-import { createMessage, listMessagesBetween, markMessagesRead } from "../repositories/messages.repo.js";
 
-function ensureCanChat(rel, meId) {
+import { getFriendship } from "../repositories/friends.repo.js";
+import { openDirectChat, listChatMessagesForUser, sendChatMessageForUser } from "./chats.service.js";
+import { forbidden } from "../utils/httpError.js";
+
+function ensureCanChat(rel, meId, otherUserId) {
+  if (meId === otherUserId) return;
   if (!rel) throw forbidden("Not friends");
   if (rel.status === "blocked") throw forbidden("Chat is blocked");
   if (rel.status !== "accepted") throw forbidden("Friend request not accepted");
@@ -10,19 +12,14 @@ function ensureCanChat(rel, meId) {
 
 export async function listChatMessages(meId, otherUserId) {
   const rel = await getFriendship(meId, otherUserId);
-  ensureCanChat(rel, meId);
-  // Mark unread messages from the other user as read when this chat is opened/fetched.
-  await markMessagesRead(meId, otherUserId);
-  return await listMessagesBetween(meId, otherUserId, { limit: 200 });
+  ensureCanChat(rel, meId, otherUserId);
+  const chat = await openDirectChat(meId, otherUserId);
+  return await listChatMessagesForUser(meId, chat.id);
 }
 
-export async function sendChatMessage(meId, otherUserId, body) {
+export async function sendChatMessage(meId, otherUserId, body, files = []) {
   const rel = await getFriendship(meId, otherUserId);
-  ensureCanChat(rel, meId);
-
-  const text = (body || "").toString().trim();
-  if (!text) throw badRequest("Message body is required");
-  if (text.length > 2000) throw badRequest("Message too long");
-
-  return await createMessage(meId, otherUserId, text);
+  ensureCanChat(rel, meId, otherUserId);
+  const chat = await openDirectChat(meId, otherUserId);
+  return await sendChatMessageForUser(meId, chat.id, { body, files });
 }
