@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import TaskPlannerModal from "../components/TaskPlannerModal";
+import RoundTimePicker from "../components/RoundTimePicker";
 import { apiGetCourse, apiUpdateCourse, apiDeleteCourse } from "../api/courses.api";
 import {
   apiCreateTask,
@@ -57,9 +58,9 @@ function Pill({ children }) {
         fontSize: 12,
         padding: "4px 8px",
         borderRadius: 999,
-        border: "1px solid #e5e7eb",
-        background: "#f9fafb",
-        color: "#374151",
+        border: "1px solid var(--border)",
+        background: "var(--surface-soft)",
+        color: "var(--fg)",
       }}
     >
       {children}
@@ -126,11 +127,11 @@ export default function CourseDetail() {
       backgroundImage: bg,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      backgroundColor: course.banner_url ? undefined : "#f3f4f6",
+      backgroundColor: course.banner_url ? undefined : "var(--surface-soft)",
       borderRadius: 18,
       overflow: "hidden",
       position: "relative",
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--border)",
     };
   }, [course]);
 
@@ -410,13 +411,13 @@ export default function CourseDetail() {
                   {course.image_url ? (
                     <img src={course.image_url} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ fontWeight: 900, fontSize: 18, color: "#111" }}>
+                    <span style={{ fontWeight: 900, fontSize: 18, color: "var(--fg)" }}>
                       {(course.name || "?").slice(0, 2).toUpperCase()}
                     </span>
                   )}
                 </div>
 
-                <div style={{ color: course.banner_url ? "white" : "#111" }}>
+                <div style={{ color: course.banner_url ? "white" : "var(--fg)" }}>
                   <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>{course.name}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                     {course.day_of_week || course.start_time || course.end_time ? (
@@ -443,7 +444,7 @@ export default function CourseDetail() {
                 {course.description ? (
                   <div className="card">
                     <h3 style={{ marginTop: 0 }}>Description</h3>
-                    <div style={{ whiteSpace: "pre-wrap", color: "#374151" }}>{course.description}</div>
+                    <div style={{ whiteSpace: "pre-wrap", color: "var(--fg)" }}>{course.description}</div>
                   </div>
                 ) : null}
 
@@ -451,7 +452,7 @@ export default function CourseDetail() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
                     <div>
                       <h3 style={{ margin: 0 }}>Course notes</h3>
-                      <div style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>
+                      <div style={{ color: "var(--muted)", fontSize: 14, marginTop: 4 }}>
                         Rich text notes with an AI study assistant and PDF export.
                       </div>
                     </div>
@@ -461,7 +462,7 @@ export default function CourseDetail() {
                   </div>
 
                   {notes.length === 0 ? (
-                    <div style={{ color: "#6b7280" }}>No notes yet. Start a lesson to create your first one.</div>
+                    <div style={{ color: "var(--muted)" }}>No notes yet. Start a lesson to create your first one.</div>
                   ) : (
                     <div style={{ display: "grid", gap: 10 }}>
                       {notes.map((note) => (
@@ -472,15 +473,15 @@ export default function CourseDetail() {
                             display: "grid",
                             gap: 4,
                             padding: 14,
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid var(--border)",
                             borderRadius: 14,
                             textDecoration: "none",
                             color: "inherit",
-                            background: "#fff",
+                            background: "var(--bg-elevated)",
                           }}
                         >
                           <div style={{ fontWeight: 700 }}>{note.title}</div>
-                          <div style={{ fontSize: 13, color: "#6b7280" }}>
+                          <div style={{ fontSize: 13, color: "var(--muted)" }}>
                             Created {formatStamp(note.created_at)} · Edited {formatStamp(note.updated_at)}
                           </div>
                         </Link>
@@ -497,7 +498,7 @@ export default function CourseDetail() {
                         Create and plan tasks here for this course.
                       </div>
                     </div>
-                    <span style={{ color: "#6b7280", fontSize: 14 }}>{tasks.length} total</span>
+                    <span style={{ color: "var(--muted)", fontSize: 14 }}>{tasks.length} total</span>
                   </div>
 
                   {createTaskOpen ? (
@@ -542,7 +543,7 @@ export default function CourseDetail() {
                             padding: "8px 16px",
                             border: "1px solid #ccc",
                             borderRadius: "4px",
-                            backgroundColor: "#f9f9f9",
+                            backgroundColor: "var(--surface-soft)",
                             cursor: "pointer",
                           }}
                         >
@@ -653,7 +654,7 @@ export default function CourseDetail() {
 
                   <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
                     {tasks.length === 0 ? (
-                      <div style={{ color: "#6b7280" }}>No tasks for this course yet.</div>
+                      <div style={{ color: "var(--muted)" }}>No tasks for this course yet.</div>
                     ) : (
                       tasks.map((task) => (
                         <div

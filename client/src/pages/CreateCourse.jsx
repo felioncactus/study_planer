@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import RoundTimePicker from "../components/RoundTimePicker";
 import { apiCreateCourse } from "../api/courses.api";
 
 function dateOnly(value) {
@@ -157,23 +158,17 @@ export default function CreateCourse() {
                 </select>
               </label>
 
-              <label style={{ display: "grid", gap: 6 }}>
-                Start time
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </label>
+              <RoundTimePicker
+                label="Start time"
+                value={startTime}
+                onChange={setStartTime}
+              />
 
-              <label style={{ display: "grid", gap: 6 }}>
-                End time
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </label>
+              <RoundTimePicker
+                label="End time"
+                value={endTime}
+                onChange={setEndTime}
+              />
             </div>
 
             <div

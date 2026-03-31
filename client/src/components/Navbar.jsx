@@ -49,7 +49,7 @@ export default function Navbar() {
         <div className="container">
           <div className="navbar">
             <div className="nav-links">
-              <NavLink to="/" className={linkClass}>
+              <NavLink to="/dashboard" className={linkClass}>
                 Dashboard
               </NavLink>
               <NavLink to="/courses" className={linkClass}>

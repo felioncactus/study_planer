@@ -4,13 +4,6 @@ import Navbar from "../components/Navbar";
 import { apiGetNote, apiUpdateNote, apiDeleteNote } from "../api/notes.api";
 import { apiNoteAssistantHelp } from "../api/noteAssistant.api";
 
-const TOOLBAR_BUTTON = {
-  padding: "8px 10px",
-  border: "1px solid #d1d5db",
-  borderRadius: 10,
-  background: "white",
-  cursor: "pointer",
-};
 
 function formatStamp(value) {
   if (!value) return "—";
@@ -69,7 +62,7 @@ function highlightAddedText(previousHtml, nextHtml) {
       if (/^\s+$/.test(token) || /^<[^>]+>$/.test(token)) {
         out.push(token);
       } else {
-        out.push(`<span data-ai-added="true" style="background:#dcfce7;color:#166534;padding:0 0.08em;border-radius:0.2em;">${token}</span>`);
+        out.push(`<span data-ai-added="true" style="background:var(--ai-highlight-bg, rgba(74, 222, 128, 0.18));color:var(--ai-highlight-fg, #bbf7d0);padding:0 0.08em;border-radius:0.2em;">${token}</span>`);
       }
       j += 1;
     }
@@ -78,7 +71,7 @@ function highlightAddedText(previousHtml, nextHtml) {
   while (j < n) {
     const token = after[j];
     if (/^\s+$/.test(token) || /^<[^>]+>$/.test(token)) out.push(token);
-    else out.push(`<span data-ai-added="true" style="background:#dcfce7;color:#166534;padding:0 0.08em;border-radius:0.2em;">${token}</span>`);
+    else out.push(`<span data-ai-added="true" style="background:var(--ai-highlight-bg, rgba(74, 222, 128, 0.18));color:var(--ai-highlight-fg, #bbf7d0);padding:0 0.08em;border-radius:0.2em;">${token}</span>`);
     j += 1;
   }
 
@@ -407,18 +400,18 @@ export default function NoteEditor() {
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 1480, margin: "24px auto", padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
+      <div className="note-editor-shell">
+        <div className="note-editor-topbar">
           <div>
-            <div style={{ marginBottom: 6 }}>
+            <div className="note-editor-backlink">
               <Link to={note ? `/courses/${note.course_id}` : "/courses"}>← Back to course</Link>
             </div>
-            <div style={{ color: "#6b7280", fontSize: 14 }}>
+            <div className="note-editor-meta">
               {note?.course_name || "Course note"} · Created {formatStamp(note?.created_at)} · Updated {formatStamp(note?.updated_at)}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div className="note-editor-actions">
             <button type="button" onClick={undo} disabled={!canUndo}>←</button>
             <button type="button" onClick={redo} disabled={!canRedo}>→</button>
             <button type="button" onClick={() => saveNote()} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
@@ -427,45 +420,45 @@ export default function NoteEditor() {
           </div>
         </div>
 
-        {error ? <div style={{ marginBottom: 12, color: "crimson" }}>{error}</div> : null}
-        {notice ? <div style={{ marginBottom: 12, color: "#166534" }}>{notice}</div> : null}
+        {error ? <div className="note-editor-alert note-editor-alert-error">{error}</div> : null}
+        {notice ? <div className="note-editor-alert note-editor-alert-success">{notice}</div> : null}
 
         {loading ? (
           <div>Loading…</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 18, alignItems: "start" }}>
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ padding: 16, borderBottom: "1px solid #e5e7eb", display: "grid", gap: 10 }}>
+          <div className="note-editor-layout">
+            <div className="card note-editor-card">
+              <div className="note-editor-toolbar-wrap">
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Note title"
-                  style={{ fontSize: 28, fontWeight: 800, border: "none", outline: "none", width: "100%" }}
+                  className="note-editor-title-input"
                 />
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("bold")}>Bold</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("italic")}>Italic</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("underline")}>Underline</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("formatBlock", "<H2>")}>Heading</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("insertUnorderedList")}>Bullets</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("insertOrderedList")}>Numbered</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("formatBlock", "<BLOCKQUOTE>")}>Quote</button>
-                  <button type="button" style={TOOLBAR_BUTTON} onClick={() => runEditorCommand("removeFormat")}>Clear</button>
+                <div className="note-editor-toolbar">
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("bold")}>Bold</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("italic")}>Italic</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("underline")}>Underline</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<H2>")}>Heading</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertUnorderedList")}>Bullets</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertOrderedList")}>Numbered</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<BLOCKQUOTE>")}>Quote</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("removeFormat")}>Clear</button>
                 </div>
               </div>
 
               {pendingSuggestion ? (
-                <div style={{ margin: 16, padding: 14, border: "1px solid #bbf7d0", background: "#f0fdf4", borderRadius: 14 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 8 }}>AI suggestion preview</div>
-                  <div style={{ color: "#166534", fontSize: 14, marginBottom: 10 }}>
+                <div className="note-editor-suggestion">
+                  <div className="note-editor-suggestion-title">AI suggestion preview</div>
+                  <div className="note-editor-suggestion-help">
                     New text is highlighted in green.
                   </div>
                   <div
-                    style={{ border: "1px solid #dcfce7", borderRadius: 12, padding: 16, background: "white", maxHeight: 260, overflow: "auto" }}
+                    className="note-editor-suggestion-body"
                     dangerouslySetInnerHTML={{ __html: pendingSuggestion }}
                   />
-                  <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <div className="note-editor-suggestion-actions">
                     <button type="button" onClick={applySuggestion}>Apply suggestion</button>
                     <button type="button" onClick={discardSuggestion}>Discard</button>
                   </div>
@@ -477,36 +470,23 @@ export default function NoteEditor() {
                 contentEditable
                 suppressContentEditableWarning
                 onInput={handleEditorInput}
-                style={{
-                  minHeight: "70vh",
-                  padding: 28,
-                  outline: "none",
-                  lineHeight: 1.7,
-                  fontSize: 16,
-                  background: "linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)",
-                }}
+                className="note-editor-canvas"
               />
             </div>
 
-            <aside className="card" style={{ position: "sticky", top: 84 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <h3 style={{ marginTop: 0, marginBottom: 0 }}>AI assistant</h3>
-                <span style={{ fontSize: 12, color: "#6b7280" }}>{stats.words} words</span>
+            <aside className="card note-editor-sidebar">
+              <div className="note-editor-sidebar-head">
+                <h3 className="note-editor-sidebar-title">AI assistant</h3>
+                <span className="note-editor-word-count">{stats.words} words</span>
               </div>
 
-              <div style={{ display: "grid", gap: 10, maxHeight: "58vh", overflow: "auto", marginTop: 14 }}>
+              <div className="note-editor-chat-list">
                 {chatMessages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}`}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      background: message.role === "user" ? "#eff6ff" : "#f9fafb",
-                      border: "1px solid #e5e7eb",
-                      whiteSpace: "pre-wrap",
-                    }}
+                    className={`note-editor-chat-bubble ${message.role === "user" ? "is-user" : "is-assistant"}`}
                   >
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                    <div className="note-editor-chat-role">
                       {message.role === "user" ? "You" : "Assistant"}
                     </div>
                     <div>{message.content}</div>
@@ -514,8 +494,9 @@ export default function NoteEditor() {
                 ))}
               </div>
 
-              <form onSubmit={askAssistant} style={{ display: "grid", gap: 10, marginTop: 14 }}>
+              <form onSubmit={askAssistant} className="note-editor-chat-form">
                 <textarea
+                  className="note-editor-chat-input"
                   rows={4}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}

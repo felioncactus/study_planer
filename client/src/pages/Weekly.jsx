@@ -1,9 +1,9 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { apiListCalendarEvents } from "../api/calendar.api";
 import { apiListCourses } from "../api/courses.api";
 import { apiListTasks } from "../api/tasks.api";
+import { parseDateLike } from "../utils/date";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -26,7 +26,7 @@ function addDays(date, days) {
 }
 
 function sameYmd(a, b) {
-  return toYmd(new Date(a)) === toYmd(new Date(b));
+  return toYmd(parseDateLike(a)) === toYmd(parseDateLike(b));
 }
 
 function formatHumanDate(value) {
@@ -34,18 +34,18 @@ function formatHumanDate(value) {
     weekday: "long",
     month: "long",
     day: "numeric",
-  }).format(new Date(value));
+  }).format(parseDateLike(value));
 }
 
 function formatClock(value) {
   return new Intl.DateTimeFormat(undefined, {
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(parseDateLike(value));
 }
 
 function minutesOfDay(value) {
-  const d = new Date(value);
+  const d = parseDateLike(value);
   return d.getHours() * 60 + d.getMinutes();
 }
 

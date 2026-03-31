@@ -1,4 +1,5 @@
 
+import RoundTimePicker from "./RoundTimePicker";
 import React, { useEffect, useMemo, useState } from "react";
 import { apiAiPlanActivity } from "../api/activities.api";
 
@@ -178,9 +179,9 @@ export default function ActivityPlannerModal({
 
               {windowPreset === "custom" ? (
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                  <input className="input" type="time" value={customStart} onChange={(e) => setCustomStart(e.target.value)} disabled={!!loading} />
+                  <RoundTimePicker value={customStart} onChange={setCustomStart} disabled={!!loading} />
                   <span className="small muted">to</span>
-                  <input className="input" type="time" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} disabled={!!loading} />
+                  <RoundTimePicker value={customEnd} onChange={setCustomEnd} disabled={!!loading} />
                   <button className="btn btn-ghost" onClick={() => applyWindow({ start: customStart, end: customEnd })} disabled={!!loading}>
                     Apply
                   </button>

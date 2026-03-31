@@ -127,6 +127,8 @@ export default function FriendChat() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editingBody, setEditingBody] = useState("");
 
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
@@ -283,11 +285,22 @@ export default function FriendChat() {
     }
   }
 
-  async function handleEditMessage(message) {
+  function handleEditMessage(message) {
     if (!chat?.id || !message?.id) return;
-    const nextBody = window.prompt("Edit your message", message.body || "");
-    if (nextBody === null) return;
-    const trimmed = nextBody.trim();
+    setEditingMessage(message);
+    setEditingBody(message.body || "");
+    setError("");
+  }
+
+  function closeEditComposer() {
+    if (busy) return;
+    setEditingMessage(null);
+    setEditingBody("");
+  }
+
+  async function submitEditMessage() {
+    if (!chat?.id || !editingMessage?.id) return;
+    const trimmed = editingBody.trim();
     if (!trimmed) {
       setError("Message body is required");
       return;
@@ -295,9 +308,10 @@ export default function FriendChat() {
     try {
       setBusy(true);
       setError("");
-      await editChatMessage(chat.id, message.id, { body: trimmed });
+      await editChatMessage(chat.id, editingMessage.id, { body: trimmed });
       await refreshMessages(chat.id);
       await refreshSidebar();
+      closeEditComposer();
     } catch (e) {
       setError(e?.response?.data?.error?.message || e?.message || "Failed to edit message");
     } finally {
@@ -423,6 +437,43 @@ export default function FriendChat() {
                   )}
                   <div ref={bottomRef} />
                 </div>
+
+
+                {editingMessage ? (
+                  <div className="modal-backdrop">
+                    <div className="modal-card" style={{ width: "min(760px, 100%)" }}>
+                      <div className="page-header" style={{ marginTop: 0 }}>
+                        <div>
+                          <h3 style={{ margin: 0 }}>Edit message</h3>
+                          <div className="small muted" style={{ marginTop: 6 }}>
+                            Update your message in the chat editor instead of the browser prompt.
+                          </div>
+                        </div>
+                        <button className="btn btn-ghost" type="button" onClick={closeEditComposer} disabled={busy}>
+                          Close
+                        </button>
+                      </div>
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <textarea
+                          className="input"
+                          value={editingBody}
+                          onChange={(e) => setEditingBody(e.target.value)}
+                          rows={6}
+                          disabled={busy}
+                          placeholder="Edit your message…"
+                        />
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                          <button className="btn btn-ghost" type="button" onClick={closeEditComposer} disabled={busy}>
+                            Cancel
+                          </button>
+                          <button className="btn btn-primary" type="button" onClick={submitEditMessage} disabled={busy || !editingBody.trim()}>
+                            Save message
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="card" style={{ marginTop: 12 }}>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>

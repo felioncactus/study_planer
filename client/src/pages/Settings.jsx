@@ -139,18 +139,7 @@ export default function Settings() {
                     onChange={(e) => onPickAvatar(e.target.files?.[0] || null)}
                     style={{ display: "none" }}
                   />
-                  <label
-                    htmlFor="avatar"
-                    className="btn btn-ghost"
-                    style={{
-                      display: "inline-block",
-                      padding: "8px 16px",
-                      border: "1px solid #ccc",
-                      borderRadius: "4px",
-                      backgroundColor: "#f9f9f9",
-                      cursor: "pointer",
-                    }}
-                  >
+                  <label htmlFor="avatar" className="btn btn-ghost" style={{ display: "inline-flex" }}>
                     Choose file
                   </label>
                 </label>
