@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { apiDeleteCourse, apiListCourses } from "../api/courses.api";
@@ -28,6 +29,9 @@ export default function Courses() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const highlighted = useMemo(() => courses.slice(0, 1)[0] || null, [courses]);
+  const rest = useMemo(() => (highlighted ? courses.slice(1) : courses), [courses, highlighted]);
+
   async function refresh() {
     setError("");
     setLoading(true);
@@ -51,156 +55,127 @@ export default function Courses() {
       await apiDeleteCourse(id);
       setCourses((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setError(
-        err?.response?.data?.error?.message || "Failed to delete course",
-      );
+      setError(err?.response?.data?.error?.message || "Failed to delete course");
     }
   }
 
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
-        <div className="page-header">
-          <div>
-            <div className="title">Courses</div>
+      <div className="container stack course-page-shell" style={{ marginTop: 20 }}>
+        <section className="course-hero card bg-texture">
+          <div className="course-hero-copy">
+            <div className="eyebrow">Study hub</div>
+            <div className="title course-hero-title">Courses that feel organized, calm, and easy to scan.</div>
             <div className="small muted">
-              Open a course to manage notes, tasks, and settings together.
+              Open a course to manage notes, tasks, schedule details, and deadlines together.
             </div>
           </div>
-          <div className="row" style={{ gap: 10 }}>
-            <Link to="/courses/new" className="btn btn-primary">
-              Create course
-            </Link>
-            <Link to="/tasks" className="btn btn-ghost">
-              Open all tasks
-            </Link>
+
+          <div className="course-hero-actions">
+            <Link to="/courses/new" className="btn btn-primary">Create course</Link>
+            <Link to="/tasks" className="btn btn-ghost">Open all tasks</Link>
           </div>
-        </div>
+        </section>
 
         {error ? <div className="notice notice-danger">{error}</div> : null}
 
-        <div className="card">
-          {loading ? (
-            <div>Loading…</div>
-          ) : courses.length === 0 ? (
-            <div className="small muted">
-              No courses yet. Create your first course to start adding notes and tasks.
+        {loading ? (
+          <div className="card">Loading…</div>
+        ) : courses.length === 0 ? (
+          <div className="card">
+            <div className="section-title">No courses yet</div>
+            <div className="small muted" style={{ marginTop: 6 }}>
+              Create your first course to start adding notes, lecture times, and task plans.
             </div>
-          ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {courses.map((course) => {
-                const metaParts = metaForCourse(course);
-                return (
-                  <div
-                    key={course.id}
-                    style={{
-                      display: "flex",
-                      gap: 14,
-                      alignItems: "stretch",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 16,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 8,
-                        background: course.color || "#cbd5e1",
-                        flex: "0 0 auto",
-                      }}
-                    />
-                    <div
-                      style={{
-                        flex: 1,
-                        padding: 14,
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 12,
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <Link
-                            to={`/courses/${course.id}`}
-                            style={{
-                              fontWeight: 800,
-                              fontSize: 18,
-                              textDecoration: "none",
-                              color: "inherit",
-                            }}
-                          >
-                            {course.name}
-                          </Link>
-                          {course.color ? (
-                            <span
-                              title={course.color}
-                              style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: 999,
-                                background: course.color,
-                                border: "1px solid #ddd",
-                              }}
-                            />
-                          ) : null}
-                        </div>
-
-                        {course.description ? (
-                          <div
-                            style={{
-                              marginTop: 6,
-                              color: "#444",
-                              fontSize: 13,
-                              whiteSpace: "pre-wrap",
-                            }}
-                          >
-                            {course.description}
-                          </div>
-                        ) : null}
-
-                        {metaParts.length ? (
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#666",
-                              fontSize: 12,
-                            }}
-                          >
-                            {metaParts.join(" • ")}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="row" style={{ gap: 8 }}>
-                        <Link
-                          to={`/courses/${course.id}`}
-                          className="btn btn-ghost"
-                        >
-                          Open
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          onClick={() => onDelete(course.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
+          </div>
+        ) : (
+          <>
+            {highlighted ? (
+              <section className="feature-course card">
+                <div className="feature-course-banner" style={{ backgroundImage: highlighted.banner_url ? `url(${highlighted.banner_url})` : "none" }}>
+                  <div className="feature-course-overlay" />
+                  <div className="feature-course-content">
+                    <div className="course-dot" style={{ background: highlighted.color || "#94a3b8" }} />
+                    <div>
+                      <div className="eyebrow">Featured course</div>
+                      <Link to={`/courses/${highlighted.id}`} className="feature-course-title">
+                        {highlighted.name}
+                      </Link>
                     </div>
                   </div>
+                </div>
+
+                <div className="feature-course-body">
+                  <div className="small" style={{ whiteSpace: "pre-wrap" }}>
+                    {highlighted.description || "Add a summary, meeting time, and course art to make this page feel alive and personal."}
+                  </div>
+
+                  {metaForCourse(highlighted).length ? (
+                    <div className="course-meta-wrap">
+                      {metaForCourse(highlighted).map((item) => (
+                        <span key={item} className="course-chip">{item}</span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className="row" style={{ justifyContent: "space-between", marginTop: 14 }}>
+                    <Link to={`/courses/${highlighted.id}`} className="btn btn-primary">Open course</Link>
+                    <button type="button" className="btn btn-danger" onClick={() => onDelete(highlighted.id)}>Delete</button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="course-grid">
+              {rest.map((course) => {
+                const metaParts = metaForCourse(course);
+                return (
+                  <article key={course.id} className="course-card card lift">
+                    <div className="course-card-top">
+                      <div className="course-card-head">
+                        <span className="course-dot" style={{ background: course.color || "#cbd5e1" }} />
+                        <div>
+                          <Link to={`/courses/${course.id}`} className="course-card-title">
+                            {course.name}
+                          </Link>
+                          <div className="small muted">A focused place for notes, tasks, and schedule details.</div>
+                        </div>
+                      </div>
+
+                      {course.image_url ? (
+                        <img className="course-card-image" src={course.image_url} alt={course.name} />
+                      ) : (
+                        <div className="course-card-image course-card-image-fallback">
+                          <span>{course.name?.slice(0, 1)?.toUpperCase() || "C"}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="course-card-body">
+                      <div className="course-card-description">
+                        {course.description || "No course description yet."}
+                      </div>
+
+                      {metaParts.length ? (
+                        <div className="course-meta-wrap">
+                          {metaParts.map((item) => (
+                            <span key={item} className="course-chip">{item}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="course-card-actions">
+                      <Link to={`/courses/${course.id}`} className="btn btn-ghost">Open</Link>
+                      <button type="button" className="btn btn-danger" onClick={() => onDelete(course.id)}>Delete</button>
+                    </div>
+                  </article>
                 );
               })}
-            </div>
-          )}
-        </div>
+            </section>
+          </>
+        )}
       </div>
     </>
   );

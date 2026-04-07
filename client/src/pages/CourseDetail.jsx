@@ -119,6 +119,15 @@ export default function CourseDetail() {
   const imagePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : ""), [imageFile]);
   const bannerPreview = useMemo(() => (bannerFile ? URL.createObjectURL(bannerFile) : ""), [bannerFile]);
 
+
+  const taskStats = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((task) => task.status === "done").length;
+    const active = tasks.filter((task) => task.status === "doing").length;
+    const upcoming = tasks.filter((task) => task.due_date).sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)))[0];
+    return { total, completed, active, upcoming };
+  }, [tasks]);
+
   const headerStyle = useMemo(() => {
     if (!course) return {};
     const bg = course.banner_url ? `url(${course.banner_url})` : "none";
@@ -127,6 +136,7 @@ export default function CourseDetail() {
       backgroundImage: bg,
       backgroundSize: "cover",
       backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
       backgroundColor: course.banner_url ? undefined : "var(--surface-soft)",
       borderRadius: 18,
       overflow: "hidden",
@@ -391,46 +401,94 @@ export default function CourseDetail() {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: course.banner_url ? "rgba(0,0,0,0.18)" : "transparent",
+                  background: course.banner_url
+                    ? "linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.62))"
+                    : `linear-gradient(135deg, ${course.color || "#2563eb"}22, transparent 55%)`,
                 }}
               />
-              <div style={{ position: "absolute", left: 16, bottom: 16, display: "flex", gap: 12, alignItems: "flex-end" }}>
-                <div
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 22,
-                    overflow: "hidden",
-                    border: "4px solid white",
-                    background: course.color || "#e5e7eb",
-                    display: "grid",
-                    placeItems: "center",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  {course.image_url ? (
-                    <img src={course.image_url} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontWeight: 900, fontSize: 18, color: "var(--fg)" }}>
-                      {(course.name || "?").slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
+              <div className="course-detail-hero" style={{ position: "absolute", inset: 0, padding: 18, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        width: 76,
+                        height: 76,
+                        borderRadius: 24,
+                        overflow: "hidden",
+                        border: "4px solid rgba(255,255,255,0.92)",
+                        background: course.color || "#e5e7eb",
+                        display: "grid",
+                        placeItems: "center",
+                        flex: "0 0 auto",
+                        boxShadow: "0 18px 45px rgba(15,23,42,0.18)",
+                      }}
+                    >
+                      {course.image_url ? (
+                        <img src={course.image_url} alt={course.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontWeight: 900, fontSize: 20, color: "var(--fg)" }}>
+                          {(course.name || "?").slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ color: course.banner_url ? "white" : "var(--fg)", maxWidth: 720 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.84 }}>
+                        Course workspace
+                      </div>
+                      <div style={{ fontSize: 32, fontWeight: 900, lineHeight: 1.05, marginTop: 4 }}>{course.name}</div>
+                      {course.description ? (
+                        <div style={{ marginTop: 8, maxWidth: 620, color: course.banner_url ? "rgba(255,255,255,0.86)" : "var(--muted)" }}>
+                          {course.description}
+                        </div>
+                      ) : null}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                        {course.day_of_week || course.start_time || course.end_time ? (
+                          <Pill>
+                            {course.day_of_week ? `${course.day_of_week} ` : ""}
+                            {formatTimeRange(course.start_time, course.end_time)}
+                          </Pill>
+                        ) : null}
+                        {course.begins_on ? <Pill>Begins: {course.begins_on}</Pill> : null}
+                        {course.ends_on ? <Pill>Ends: {course.ends_on}</Pill> : null}
+                        {course.midterm_date ? <Pill>Midterm: {course.midterm_date}</Pill> : null}
+                        {course.final_date ? <Pill>Final: {course.final_date}</Pill> : null}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gap: 8, minWidth: 210 }}>
+                    <div className="course-stat-card">
+                      <span className="small muted">Tasks</span>
+                      <strong style={{ fontSize: 24 }}>{taskStats.total}</strong>
+                    </div>
+                    <div className="course-stat-grid">
+                      <div className="course-stat-card">
+                        <span className="small muted">Active</span>
+                        <strong>{taskStats.active}</strong>
+                      </div>
+                      <div className="course-stat-card">
+                        <span className="small muted">Done</span>
+                        <strong>{taskStats.completed}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ color: course.banner_url ? "white" : "var(--fg)" }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>{course.name}</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                    {course.day_of_week || course.start_time || course.end_time ? (
-                      <Pill>
-                        {course.day_of_week ? `${course.day_of_week} ` : ""}
-                        {formatTimeRange(course.start_time, course.end_time)}
-                      </Pill>
-                    ) : null}
-                    {course.begins_on ? <Pill>Begins: {course.begins_on}</Pill> : null}
-                    {course.ends_on ? <Pill>Ends: {course.ends_on}</Pill> : null}
-                    {course.midterm_date ? <Pill>Midterm: {course.midterm_date}</Pill> : null}
-                    {course.final_date ? <Pill>Final: {course.final_date}</Pill> : null}
-                    {course.color ? <Pill>{course.color}</Pill> : null}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+                  <div className="small" style={{ color: course.banner_url ? "rgba(255,255,255,0.86)" : "var(--muted)" }}>
+                    {taskStats.upcoming?.due_date ? `Next deadline: ${taskStats.upcoming.title} • ${taskStats.upcoming.due_date}` : "No due dates added yet"}
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => navigate(`/tasks?courseId=${id}&create=1`)}
+                    >
+                      Create task
+                    </button>
+                    <button type="button" onClick={startLessonNote} disabled={creatingNote}>
+                      {creatingNote ? "Opening…" : "Start lesson / note"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -439,7 +497,7 @@ export default function CourseDetail() {
             {error ? <div className="notice notice-danger" style={{ marginTop: 14 }}>{error}</div> : null}
             {notice ? <div className="notice notice-success" style={{ marginTop: 14 }}>{notice}</div> : null}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16, marginTop: 16 }}>
+            <div className="course-detail-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16, marginTop: 16 }}>
               <div style={{ display: "grid", gap: 16 }}>
                 {course.description ? (
                   <div className="card">

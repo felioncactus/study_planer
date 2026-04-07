@@ -17,6 +17,7 @@ import {
 } from "../api/chats.api";
 import { fetchFriends } from "../api/friends.api";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationsContext";
 import { formatBytes, renderChatMarkdown } from "../components/chatFormatting";
 
 const EMOJIS = ["😀", "😂", "😍", "🤔", "🔥", "👍", "🎉", "❤️"];
@@ -117,6 +118,7 @@ export default function FriendChat() {
   const { friendId, chatId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { subscribe, setActiveChatId } = useNotifications();
 
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -139,6 +141,12 @@ export default function FriendChat() {
     if (!chat) return false;
     return chat.type !== "group" || !chat.created_by || chat.created_by === user?.id;
   }, [chat, user?.id]);
+
+  useEffect(() => {
+    const nextActiveChatId = chatId || chat?.id || null;
+    setActiveChatId(nextActiveChatId ? String(nextActiveChatId) : null);
+    return () => setActiveChatId(null);
+  }, [chat?.id, chatId, setActiveChatId]);
 
   async function refreshSidebar() {
     const [chatData, friendData] = await Promise.all([fetchChats(), fetchFriends()]);
@@ -197,16 +205,24 @@ export default function FriendChat() {
       }
     })();
 
+    const unsubscribe = subscribe?.(({ event, data }) => {
+      if (event !== "chat.message") return;
+      const activeChatId = chatId || chat?.id;
+      if (!activeChatId || String(data?.chatId) !== String(activeChatId)) return;
+      refreshEverything().catch(() => {});
+    });
+
     pollRef.current = setInterval(() => {
       refreshEverything().catch(() => {});
-    }, 4000);
+    }, 20000);
 
     return () => {
       mounted = false;
+      if (unsubscribe) unsubscribe();
       if (pollRef.current) clearInterval(pollRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendId, chatId]);
+  }, [friendId, chatId, chat?.id, subscribe]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -339,7 +355,7 @@ export default function FriendChat() {
     <>
       <Navbar />
       <div className="container" style={{ paddingTop: 18, paddingBottom: 32 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16, alignItems: "start" }}>
+        <div className="friend-chat-layout" style={{ display: "grid", gridTemplateColumns: "minmax(260px, 320px) 1fr", gap: 16, alignItems: "start" }}>
           <div style={{ display: "grid", gap: 16 }}>
             <div className="card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>

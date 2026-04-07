@@ -21,6 +21,7 @@ import {
   updateMessage,
 } from "../repositories/chats.repo.js";
 import { askChatBot } from "./chatBot.service.js";
+import { publishUserEventMany } from "./realtime.service.js";
 
 function ensureFriendshipForDirect(rel, meId, otherUserId) {
   if (meId === otherUserId) return;
@@ -38,6 +39,12 @@ function publicAttachment(file) {
     mime_type: file.mimetype || null,
     size_bytes: file.size || null,
   };
+}
+
+
+function messagePreview(value) {
+  const clean = String(value || "").replace(/\s+/g, " ").trim();
+  return clean.length > 140 ? `${clean.slice(0, 137)}...` : clean;
 }
 
 function normalizeChat(chat, participants, meId) {
@@ -172,10 +179,29 @@ export async function sendChatMessageForUser(meId, chatId, { body, files = [] })
   });
 
   const attachments = await addAttachments(message.id, files.map(publicAttachment));
+  const participants = await listParticipantsByChatId(chat.id);
+
+  const recipientIds = participants
+    .map((p) => p.user_id)
+    .filter((userId) => String(userId) !== String(meId));
+
+  publishUserEventMany(
+    recipientIds,
+    "chat.message",
+    () => ({
+      chatId: chat.id,
+      title: chat.title || "Chat",
+      body: text,
+      preview: messagePreview(text || (attachments.length ? "Attachment" : "")),
+      senderId: meId,
+      senderName: participants.find((p) => p.user_id === meId)?.name || participants.find((p) => p.user_id === meId)?.email || "User",
+      messageId: message.id,
+      incoming: true,
+    })
+  );
 
   if (isBotCommand) {
     const history = await listChatMessagesForUser(meId, chat.id);
-    const participants = await listParticipantsByChatId(chat.id);
     const asker = participants.find((p) => p.user_id === meId);
     const botReply = await askChatBot({
       chatTitle: chat.title,
@@ -184,7 +210,7 @@ export async function sendChatMessageForUser(meId, chatId, { body, files = [] })
       question: botQuestion,
       askerName: asker?.name || asker?.email || "User",
     });
-    await createMessage(chat.id, {
+    const botMessage = await createMessage(chat.id, {
       senderId: null,
       senderKind: "bot",
       body: botReply,
@@ -192,6 +218,21 @@ export async function sendChatMessageForUser(meId, chatId, { body, files = [] })
         trigger_message_id: message.id,
       },
     });
+
+    publishUserEventMany(
+      participants.map((p) => p.user_id),
+      "chat.message",
+      {
+        chatId: chat.id,
+        title: chat.title || "Chat",
+        body: botReply,
+        preview: messagePreview(botReply),
+        senderId: null,
+        senderName: "Bot",
+        messageId: botMessage.id,
+        incoming: true,
+      }
+    );
   }
 
   return {

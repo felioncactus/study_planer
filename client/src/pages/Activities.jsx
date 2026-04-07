@@ -1,5 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
+import RoundTimePicker from "../components/RoundTimePicker";
 import Navbar from "../components/Navbar";
 import ActivityPlannerModal from "../components/ActivityPlannerModal";
 import { apiCreateActivity, apiDeleteActivity, apiListActivities, apiUpdateActivity } from "../api/activities.api";
@@ -228,8 +229,37 @@ export default function Activities() {
               </label>
             </div>
 
+            <div className="two-col">
+              <div className="card" style={{ padding: 12 }}>
+                <div className="small" style={{ fontWeight: 700, marginBottom: 8 }}>Start time</div>
+                <RoundTimePicker
+                  value={startAt ? startAt.slice(11, 16) : ""}
+                  onChange={(value) => {
+                    if (!startAt) return;
+                    setStartAt(`${startAt.slice(0, 10)}T${value}`);
+                    if (endAt) {
+                      const startDate = new Date(`${startAt.slice(0, 10)}T${value}`);
+                      const nextEnd = new Date(startDate);
+                      nextEnd.setMinutes(nextEnd.getMinutes() + totalMinutes);
+                      setEndAt(toLocalInputValue(nextEnd));
+                    }
+                  }}
+                />
+              </div>
+              <div className="card" style={{ padding: 12 }}>
+                <div className="small" style={{ fontWeight: 700, marginBottom: 8 }}>End time</div>
+                <RoundTimePicker
+                  value={endAt ? endAt.slice(11, 16) : ""}
+                  onChange={(value) => {
+                    if (!endAt) return;
+                    setEndAt(`${endAt.slice(0, 10)}T${value}`);
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="small muted">
-              Use AI planning for a cleaner slot, or save manual start/end directly.
+              Activities now use the same rounded time-picking flow as task planning, with exact manual start and end times.
             </div>
 
             <div className="row" style={{ justifyContent: "flex-end" }}>
