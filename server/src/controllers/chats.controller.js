@@ -3,6 +3,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   clearChatForUser,
   createGroupChatForUser,
+  createPollForUser,
+  votePollForUser,
+  createTimerForUser,
   deleteChatForUser,
   deleteChatMessageForUser,
   editChatMessageForUser,
@@ -75,4 +78,29 @@ export const createGroupChatHandler = asyncHandler(async (req, res) => {
     memberIds: req.body?.memberIds,
   });
   res.status(201).json({ chat });
+});
+
+
+export const createPollHandler = asyncHandler(async (req, res) => {
+  const message = await createPollForUser(req.user.id, req.params.chatId, {
+    question: req.body?.question,
+    options: req.body?.options,
+  });
+  res.status(201).json({ message });
+});
+
+export const votePollHandler = asyncHandler(async (req, res) => {
+  const message = await votePollForUser(req.user.id, req.params.chatId, req.params.messageId, {
+    optionIndex: req.body?.optionIndex,
+  });
+  res.json({ message });
+});
+
+export const createTimerHandler = asyncHandler(async (req, res) => {
+  const message = await createTimerForUser(req.user.id, req.params.chatId, {
+    title: req.body?.title,
+    durationMinutes: req.body?.durationMinutes,
+    endsAt: req.body?.endsAt,
+  });
+  res.status(201).json({ message });
 });

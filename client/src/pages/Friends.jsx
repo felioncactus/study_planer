@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { acceptFriend, blockUser, fetchFriends, removeFriend, requestFriend, unblockUser } from "../api/friends.api";
 import Navbar from "../components/Navbar";
+import { useNotifications } from "../context/NotificationsContext";
 
 function FriendCard({ friend, meta, actions }) {
   return (
@@ -22,6 +23,7 @@ function FriendCard({ friend, meta, actions }) {
 }
 
 export default function Friends() {
+  const { badge } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState({ accepted: [], pending_inbound: [], pending_outbound: [], blocked: [] });
@@ -132,7 +134,7 @@ export default function Friends() {
           </p>
         </div>
         <Link className="btn" to="/chat">
-          Open chat page
+          Open chat page{badge ? ` (${badge})` : ""}
         </Link>
       </div>
 

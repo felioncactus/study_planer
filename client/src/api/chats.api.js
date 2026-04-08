@@ -60,3 +60,19 @@ export async function createGroupChat({ title, memberIds }) {
   const { data } = await http.post("/chats/group", { title, memberIds });
   return data;
 }
+
+
+export async function createChatPoll(chatId, { question, options }) {
+  const { data } = await http.post(`/chats/${chatId}/polls`, { question, options });
+  return data;
+}
+
+export async function voteChatPoll(chatId, messageId, { optionIndex }) {
+  const { data } = await http.post(`/chats/${chatId}/polls/${messageId}/vote`, { optionIndex });
+  return data;
+}
+
+export async function createChatTimer(chatId, { title, durationMinutes, endsAt }) {
+  const { data } = await http.post(`/chats/${chatId}/timers`, { title, durationMinutes, endsAt });
+  return data;
+}

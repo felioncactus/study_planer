@@ -574,3 +574,70 @@ export async function createGroupChat({ title, createdBy, participantIds }) {
 export async function touchChat(chatId) {
   await pool.query(`UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1;`, [chatId]);
 }
+
+
+export async function createPollVote(messageId, userId, optionIndex) {
+  const res = await pool.query(
+    `INSERT INTO chat_poll_votes (message_id, user_id, option_index)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (message_id, user_id)
+     DO UPDATE SET option_index = EXCLUDED.option_index, created_at = NOW()
+     RETURNING message_id, user_id, option_index, created_at;`,
+    [messageId, userId, optionIndex]
+  );
+  return res.rows[0] || null;
+}
+
+export async function listPollVotes(messageId) {
+  const res = await pool.query(
+    `SELECT message_id, user_id, option_index, created_at
+     FROM chat_poll_votes
+     WHERE message_id = $1
+     ORDER BY created_at ASC;`,
+    [messageId]
+  );
+  return res.rows;
+}
+
+export async function createTimerEvent({ chatId, messageId, createdBy, title, endsAt }) {
+  const res = await pool.query(
+    `INSERT INTO chat_timer_events (chat_id, message_id, created_by, title, ends_at)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, chat_id, message_id, created_by, title, ends_at, completed_at, created_at;`,
+    [chatId, messageId, createdBy, title, endsAt]
+  );
+  return res.rows[0] || null;
+}
+
+export async function getTimerEventByMessageId(messageId) {
+  const res = await pool.query(
+    `SELECT id, chat_id, message_id, created_by, title, ends_at, completed_at, created_at
+     FROM chat_timer_events
+     WHERE message_id = $1
+     LIMIT 1;`,
+    [messageId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function completeTimerEvent(messageId) {
+  const res = await pool.query(
+    `UPDATE chat_timer_events
+     SET completed_at = COALESCE(completed_at, NOW())
+     WHERE message_id = $1
+     RETURNING id, chat_id, message_id, created_by, title, ends_at, completed_at, created_at;`,
+    [messageId]
+  );
+  return res.rows[0] || null;
+}
+
+export async function listPendingTimerEvents() {
+  const res = await pool.query(
+    `SELECT id, chat_id, message_id, created_by, title, ends_at, completed_at, created_at
+     FROM chat_timer_events
+     WHERE completed_at IS NULL
+       AND ends_at > NOW()
+     ORDER BY ends_at ASC;`
+  );
+  return res.rows;
+}

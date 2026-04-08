@@ -5,6 +5,9 @@ import { chatAttachmentsUpload } from "../middleware/chatAttachmentsUpload.middl
 import {
   clearChatHandler,
   createGroupChatHandler,
+  createPollHandler,
+  votePollHandler,
+  createTimerHandler,
   deleteChatHandler,
   deleteChatMessageHandler,
   editChatMessageHandler,
@@ -29,5 +32,8 @@ chatsRouter.delete("/:chatId", deleteChatHandler);
 chatsRouter.delete("/:chatId/messages", clearChatHandler);
 chatsRouter.get("/:chatId/messages", listChatMessagesHandler);
 chatsRouter.post("/:chatId/messages", chatAttachmentsUpload.array("attachments", 5), sendChatMessageHandler);
+chatsRouter.post("/:chatId/polls", createPollHandler);
+chatsRouter.post("/:chatId/polls/:messageId/vote", votePollHandler);
+chatsRouter.post("/:chatId/timers", createTimerHandler);
 chatsRouter.patch("/:chatId/messages/:messageId", editChatMessageHandler);
 chatsRouter.delete("/:chatId/messages/:messageId", deleteChatMessageHandler);

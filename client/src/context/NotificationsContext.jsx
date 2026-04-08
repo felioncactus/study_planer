@@ -189,6 +189,18 @@ export function NotificationsProvider({ children }) {
             setBadge(Number(data?.total || 0));
             return;
           }
+          if (event === "chat.timer.finished") {
+            pushToast({
+              id: `chat-timer:${data?.messageId}:${data?.endsAt}`,
+              title: "Group timer finished",
+              message: data?.title || "A chat timer has ended",
+              tone: "accent",
+              sticky: true,
+              actionLabel: "Open chat",
+              actionHref: `/conversations/${data?.chatId}`,
+            });
+            return;
+          }
           if (event === "chat.message") {
             const incomingChatId = data?.chatId != null ? String(data.chatId) : null;
             const currentActiveChatId = activeChatId != null ? String(activeChatId) : null;

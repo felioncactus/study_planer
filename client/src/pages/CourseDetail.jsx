@@ -51,16 +51,19 @@ function statusTone(status) {
   return "neutral";
 }
 
-function Pill({ children }) {
+function Pill({ children, tone = "default" }) {
+  const isOnImage = tone === "image";
+
   return (
     <span
       style={{
         fontSize: 12,
-        padding: "4px 8px",
+        padding: "6px 10px",
         borderRadius: 999,
-        border: "1px solid var(--border)",
-        background: "var(--surface-soft)",
-        color: "var(--fg)",
+        border: isOnImage ? "1px solid rgba(255,255,255,0.22)" : "1px solid var(--border)",
+        background: isOnImage ? "rgba(15,23,42,0.42)" : "var(--surface-soft)",
+        color: isOnImage ? "#fff" : "var(--fg)",
+        backdropFilter: isOnImage ? "blur(8px)" : "none",
       }}
     >
       {children}
@@ -139,6 +142,7 @@ export default function CourseDetail() {
       backgroundRepeat: "no-repeat",
       backgroundColor: course.banner_url ? undefined : "var(--surface-soft)",
       borderRadius: 18,
+      color: course.banner_url ? "#fff" : "var(--fg)",
       overflow: "hidden",
       position: "relative",
       border: "1px solid var(--border)",
@@ -444,29 +448,29 @@ export default function CourseDetail() {
                       ) : null}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                         {course.day_of_week || course.start_time || course.end_time ? (
-                          <Pill>
+                          <Pill tone={course.banner_url ? "image" : "default"}>
                             {course.day_of_week ? `${course.day_of_week} ` : ""}
                             {formatTimeRange(course.start_time, course.end_time)}
                           </Pill>
                         ) : null}
-                        {course.begins_on ? <Pill>Begins: {course.begins_on}</Pill> : null}
-                        {course.ends_on ? <Pill>Ends: {course.ends_on}</Pill> : null}
-                        {course.midterm_date ? <Pill>Midterm: {course.midterm_date}</Pill> : null}
-                        {course.final_date ? <Pill>Final: {course.final_date}</Pill> : null}
+                        {course.begins_on ? <Pill tone={course.banner_url ? "image" : "default"}>Begins: {course.begins_on}</Pill> : null}
+                        {course.ends_on ? <Pill tone={course.banner_url ? "image" : "default"}>Ends: {course.ends_on}</Pill> : null}
+                        {course.midterm_date ? <Pill tone={course.banner_url ? "image" : "default"}>Midterm: {course.midterm_date}</Pill> : null}
+                        {course.final_date ? <Pill tone={course.banner_url ? "image" : "default"}>Final: {course.final_date}</Pill> : null}
                       </div>
                     </div>
                   </div>
                   <div style={{ display: "grid", gap: 8, minWidth: 210 }}>
-                    <div className="course-stat-card">
+                    <div className="course-stat-card" style={{ minWidth: 0 }}>
                       <span className="small muted">Tasks</span>
                       <strong style={{ fontSize: 24 }}>{taskStats.total}</strong>
                     </div>
-                    <div className="course-stat-grid">
-                      <div className="course-stat-card">
+                    <div className="course-stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
+                      <div className="course-stat-card" style={{ minWidth: 0 }}>
                         <span className="small muted">Active</span>
                         <strong>{taskStats.active}</strong>
                       </div>
-                      <div className="course-stat-card">
+                      <div className="course-stat-card" style={{ minWidth: 0 }}>
                         <span className="small muted">Done</span>
                         <strong>{taskStats.completed}</strong>
                       </div>

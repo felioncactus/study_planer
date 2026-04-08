@@ -36,7 +36,7 @@ export default function Activities() {
   const [location, setLocation] = useState("");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
-  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredDate, setPreferredDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [plannerStudyWindow, setPlannerStudyWindow] = useState({ start: "18:00", end: "22:00" });
@@ -206,7 +206,12 @@ export default function Activities() {
 
               <label>
                 Preferred date
-                <input type="date" value={preferredDate} onChange={(e) => setPreferredDate(e.target.value)} />
+                <input type="date" value={preferredDate} onChange={(e) => {
+                  const nextDate = e.target.value;
+                  setPreferredDate(nextDate);
+                  if (nextDate && startAt) setStartAt(`${nextDate}T${startAt.slice(11, 16)}`);
+                  if (nextDate && endAt) setEndAt(`${nextDate}T${endAt.slice(11, 16)}`);
+                }} />
               </label>
 
               <label>
@@ -235,10 +240,10 @@ export default function Activities() {
                 <RoundTimePicker
                   value={startAt ? startAt.slice(11, 16) : ""}
                   onChange={(value) => {
-                    if (!startAt) return;
-                    setStartAt(`${startAt.slice(0, 10)}T${value}`);
-                    if (endAt) {
-                      const startDate = new Date(`${startAt.slice(0, 10)}T${value}`);
+                    const baseDate = startAt?.slice(0, 10) || preferredDate || new Date().toISOString().slice(0, 10);
+                    setStartAt(`${baseDate}T${value}`);
+                    if (endAt || totalMinutes) {
+                      const startDate = new Date(`${baseDate}T${value}`);
                       const nextEnd = new Date(startDate);
                       nextEnd.setMinutes(nextEnd.getMinutes() + totalMinutes);
                       setEndAt(toLocalInputValue(nextEnd));
@@ -251,8 +256,8 @@ export default function Activities() {
                 <RoundTimePicker
                   value={endAt ? endAt.slice(11, 16) : ""}
                   onChange={(value) => {
-                    if (!endAt) return;
-                    setEndAt(`${endAt.slice(0, 10)}T${value}`);
+                    const baseDate = endAt?.slice(0, 10) || startAt?.slice(0, 10) || preferredDate || new Date().toISOString().slice(0, 10);
+                    setEndAt(`${baseDate}T${value}`);
                   }}
                 />
               </div>

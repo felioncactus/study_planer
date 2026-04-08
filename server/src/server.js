@@ -3,13 +3,16 @@ dotenv.config();
 
 import { createApp } from "./app.js";
 import { closeDb } from "./config/db.js";
+import { bootstrapChatTimers } from "./services/chatTimers.service.js";
 
 const app = createApp();
-
 const PORT = process.env.PORT || 5000;
+
 const server = app.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
 });
+
+void bootstrapChatTimers();
 
 process.on("SIGINT", async () => {
   console.log("Shutting down...");

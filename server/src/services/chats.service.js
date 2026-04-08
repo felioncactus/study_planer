@@ -19,8 +19,14 @@ import {
   listParticipantsByChatId,
   markChatRead,
   updateMessage,
+  createPollVote,
+  listPollVotes,
+  createTimerEvent,
+  getTimerEventByMessageId,
 } from "../repositories/chats.repo.js";
 import { askChatBot } from "./chatBot.service.js";
+import { planTasksForParticipants } from "./chatTaskPlanner.service.js";
+import { scheduleChatTimer } from "./chatTimers.service.js";
 import { publishUserEventMany } from "./realtime.service.js";
 
 function ensureFriendshipForDirect(rel, meId, otherUserId) {
@@ -73,6 +79,26 @@ function normalizeChat(chat, participants, meId) {
       last_read_at: p.last_read_at,
     })),
   };
+}
+
+
+function hydrateSpecialMessage(message, participants, votes = []) {
+  const metadata = { ...(message?.metadata || {}) };
+  if (metadata?.kind === "poll") {
+    const options = Array.isArray(metadata.poll?.options) ? metadata.poll.options : [];
+    const voteItems = Array.isArray(votes) ? votes : [];
+    metadata.poll = {
+      ...(metadata.poll || {}),
+      options,
+      votes: voteItems.map((vote) => ({
+        user_id: vote.user_id,
+        option_index: vote.option_index,
+        user_name: participants.find((p) => String(p.user_id) === String(vote.user_id))?.name || participants.find((p) => String(p.user_id) === String(vote.user_id))?.email || "User",
+      })),
+      totals: options.map((_, index) => voteItems.filter((vote) => Number(vote.option_index) === index).length),
+    };
+  }
+  return { ...message, metadata };
 }
 
 export async function listMyChats(meId) {
@@ -143,11 +169,18 @@ export async function listChatMessagesForUser(meId, chatId) {
   const rows = await listMessagesByChatId(chatId, { limit: 300 });
   const participants = await listParticipantsByChatId(chatId);
   const byId = new Map(participants.map((p) => [p.user_id, p]));
-  return rows.map((m) => ({
-    ...m,
-    sender_name: m.sender_kind === "bot" ? "Bot" : byId.get(m.sender_id)?.name || byId.get(m.sender_id)?.email || "Unknown",
-    sender_avatar_url: m.sender_kind === "bot" ? null : byId.get(m.sender_id)?.avatar_url || null,
-  }));
+  const messages = [];
+  for (const m of rows) {
+    const votes = m?.metadata?.kind === "poll" ? await listPollVotes(m.id) : [];
+    const timer = m?.metadata?.kind === "timer" ? await getTimerEventByMessageId(m.id) : null;
+    messages.push(hydrateSpecialMessage({
+      ...m,
+      sender_name: m.sender_kind === "bot" ? "Bot" : byId.get(m.sender_id)?.name || byId.get(m.sender_id)?.email || "Unknown",
+      sender_avatar_url: m.sender_kind === "bot" ? null : byId.get(m.sender_id)?.avatar_url || null,
+      metadata: timer ? { ...(m.metadata || {}), timer: { ...(m.metadata?.timer || {}), ends_at: timer.ends_at, completed_at: timer.completed_at } } : m.metadata,
+    }, participants, votes));
+  }
+  return messages;
 }
 
 export async function sendChatMessageForUser(meId, chatId, { body, files = [] }) {
@@ -200,7 +233,39 @@ export async function sendChatMessageForUser(meId, chatId, { body, files = [] })
     })
   );
 
-  if (isBotCommand) {
+  if (trimmed.startsWith("/plan")) {
+    const prompt = trimmed.replace(/^\/plan\s*/, "").trim();
+    if (!prompt) throw badRequest("Use /plan followed by the work split you want");
+    if (chat.type !== "group") throw badRequest("/plan is only available in group chats");
+    const requester = participants.find((p) => p.user_id === meId);
+    const plan = await planTasksForParticipants({ chat, participants, requester, prompt });
+    const reply = plan.created.length
+      ? `${plan.summary ? `${plan.summary}\n\n` : ""}Created ${plan.created.length} participant-specific task(s):\n${plan.created.map((item) => `• ${item.participant_name}: ${item.title}${item.due_date ? ` (due ${String(item.due_date).slice(0, 10)})` : ""}`).join("\n")}`
+      : "I could not create any participant-specific tasks from that request. Try naming participants and the deadline more clearly.";
+    const botMessage = await createMessage(chat.id, {
+      senderId: null,
+      senderKind: "bot",
+      body: reply,
+      metadata: {
+        trigger_message_id: message.id,
+        planner_created_count: plan.created.length,
+      },
+    });
+    publishUserEventMany(
+      participants.map((p) => p.user_id),
+      "chat.message",
+      {
+        chatId: chat.id,
+        title: chat.title || "Chat",
+        body: reply,
+        preview: messagePreview(reply),
+        senderId: null,
+        senderName: "Bot",
+        messageId: botMessage.id,
+        incoming: true,
+      }
+    );
+  } else if (isBotCommand) {
     const history = await listChatMessagesForUser(meId, chat.id);
     const asker = participants.find((p) => p.user_id === meId);
     const botReply = await askChatBot({
@@ -305,4 +370,126 @@ export async function createGroupChatForUser(meId, { title, memberIds }) {
   });
   const participants = await listParticipantsByChatId(chat.id);
   return normalizeChat(chat, participants, meId);
+}
+
+
+export async function createPollForUser(meId, chatId, { question, options }) {
+  const chat = await getChatDetail(meId, chatId);
+  if (chat.type !== "group") throw badRequest("Polls are only available in group chats");
+  const cleanQuestion = String(question || "").trim();
+  const cleanOptions = [...new Set((Array.isArray(options) ? options : []).map((item) => String(item || "").trim()).filter(Boolean))];
+  if (!cleanQuestion) throw badRequest("Poll question is required");
+  if (cleanOptions.length < 2) throw badRequest("Poll requires at least 2 options");
+
+  const message = await createMessage(chat.id, {
+    senderId: meId,
+    senderKind: "user",
+    body: `📊 ${cleanQuestion}`,
+    metadata: {
+      kind: "poll",
+      poll: {
+        question: cleanQuestion,
+        options: cleanOptions,
+      },
+    },
+  });
+  const participants = await listParticipantsByChatId(chat.id);
+  publishUserEventMany(participants.map((p) => p.user_id), "chat.message", {
+    chatId: chat.id,
+    title: chat.title || "Chat",
+    body: cleanQuestion,
+    preview: `Poll: ${cleanQuestion}`,
+    senderId: meId,
+    senderName: participants.find((p) => p.user_id === meId)?.name || "User",
+    messageId: message.id,
+    incoming: true,
+  });
+  return hydrateSpecialMessage({ ...message, attachments: [] }, participants, []);
+}
+
+export async function votePollForUser(meId, chatId, messageId, { optionIndex }) {
+  await getChatDetail(meId, chatId);
+  const message = await getMessageById(messageId);
+  if (!message || String(message.chat_id) !== String(chatId)) throw notFound("Poll not found");
+  if (message?.metadata?.kind !== "poll") throw badRequest("Message is not a poll");
+
+  const options = Array.isArray(message?.metadata?.poll?.options) ? message.metadata.poll.options : [];
+  const index = Number(optionIndex);
+  if (!Number.isInteger(index) || index < 0 || index >= options.length) throw badRequest("Invalid poll option");
+
+  await createPollVote(messageId, meId, index);
+  const participants = await listParticipantsByChatId(chatId);
+  const votes = await listPollVotes(messageId);
+  publishUserEventMany(participants.map((p) => p.user_id), "chat.message", {
+    chatId,
+    title: "Poll updated",
+    body: message.body,
+    preview: `Poll updated: ${message.metadata?.poll?.question || message.body || "Poll"}`,
+    senderId: meId,
+    senderName: participants.find((p) => p.user_id === meId)?.name || "User",
+    messageId,
+    incoming: true,
+  });
+  return hydrateSpecialMessage(message, participants, votes);
+}
+
+export async function createTimerForUser(meId, chatId, { title, durationMinutes, endsAt }) {
+  const chat = await getChatDetail(meId, chatId);
+  if (chat.type !== "group") throw badRequest("Timers are only available in group chats");
+  const cleanTitle = String(title || "").trim() || "Group timer";
+
+  let finalEndsAt = endsAt ? new Date(endsAt) : null;
+  if (!finalEndsAt || Number.isNaN(finalEndsAt.getTime())) {
+    const minutes = Number(durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) throw badRequest("Timer duration is required");
+    finalEndsAt = new Date(Date.now() + minutes * 60 * 1000);
+  }
+  if (finalEndsAt.getTime() <= Date.now()) throw badRequest("Timer end must be in the future");
+
+  const message = await createMessage(chat.id, {
+    senderId: meId,
+    senderKind: "user",
+    body: `⏱️ ${cleanTitle}`,
+    metadata: {
+      kind: "timer",
+      timer: {
+        title: cleanTitle,
+        ends_at: finalEndsAt.toISOString(),
+      },
+    },
+  });
+
+  const timer = await createTimerEvent({
+    chatId: chat.id,
+    messageId: message.id,
+    createdBy: meId,
+    title: cleanTitle,
+    endsAt: finalEndsAt.toISOString(),
+  });
+  scheduleChatTimer(timer);
+
+  const participants = await listParticipantsByChatId(chat.id);
+  publishUserEventMany(participants.map((p) => p.user_id), "chat.message", {
+    chatId: chat.id,
+    title: chat.title || "Chat",
+    body: cleanTitle,
+    preview: `Timer: ${cleanTitle}`,
+    senderId: meId,
+    senderName: participants.find((p) => p.user_id === meId)?.name || "User",
+    messageId: message.id,
+    incoming: true,
+  });
+
+  return hydrateSpecialMessage({
+    ...message,
+    attachments: [],
+    metadata: {
+      ...(message.metadata || {}),
+      timer: {
+        ...(message.metadata?.timer || {}),
+        ends_at: timer.ends_at,
+        completed_at: timer.completed_at,
+      },
+    },
+  }, participants, []);
 }
