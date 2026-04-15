@@ -6,19 +6,37 @@ import { useNotifications } from "../context/NotificationsContext";
 
 function FriendCard({ friend, meta, actions }) {
   return (
-    <div className="card" style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        <div className="avatar" title={friend.name || friend.email}>
-          {friend.avatar_url ? <img src={friend.avatar_url} alt="avatar" /> : <span className="small">{(friend.name || friend.email || "?").slice(0, 2).toUpperCase()}</span>}
+    <article className="card friend-card">
+      <div className="friend-card-main">
+        <div className="avatar friend-card-avatar" title={friend.name || friend.email}>
+          {friend.avatar_url ? (
+            <img src={friend.avatar_url} alt={`${friend.name || friend.email} avatar`} />
+          ) : (
+            <span className="small">{(friend.name || friend.email || "?").slice(0, 2).toUpperCase()}</span>
+          )}
         </div>
-        <div style={{ display: "grid" }}>
-          <div style={{ fontWeight: 650 }}>{friend.name || friend.email}</div>
+
+        <div className="friend-card-copy">
+          <div className="friend-card-name">{friend.name || friend.email}</div>
           <div className="small muted">{friend.email}</div>
           {meta}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>{actions}</div>
-    </div>
+
+      <div className="friend-card-actions">{actions}</div>
+    </article>
+  );
+}
+
+function FriendSection({ title, actions, children }) {
+  return (
+    <section className="friend-section">
+      <div className="friend-section-head">
+        <h2 className="section-title">{title}</h2>
+        {actions}
+      </div>
+      <div className="friend-section-body">{children}</div>
+    </section>
   );
 }
 
@@ -48,19 +66,28 @@ export default function Friends() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const hasAnything = useMemo(
-    () =>
-      data.accepted.length + data.pending_inbound.length + data.pending_outbound.length + data.blocked.length > 0,
+  const counts = useMemo(
+    () => ({
+      accepted: data.accepted.length,
+      inbound: data.pending_inbound.length,
+      outbound: data.pending_outbound.length,
+      blocked: data.blocked.length,
+    }),
     [data]
   );
 
+  const hasAnything = useMemo(
+    () => counts.accepted + counts.inbound + counts.outbound + counts.blocked > 0,
+    [counts]
+  );
+
   async function onRequest() {
-    const v = email.trim();
-    if (!v) return;
+    const value = email.trim();
+    if (!value) return;
     setBusy(true);
     setError("");
     try {
-      await requestFriend(v);
+      await requestFriend(value);
       setEmail("");
       await refresh();
     } catch (e) {
@@ -125,156 +152,146 @@ export default function Friends() {
   return (
     <>
       <Navbar />
-      <div className="container" style={{ paddingTop: 18, paddingBottom: 32 }}>
-      <div className="page-header" style={{ marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Friends</h2>
-          <p className="muted" style={{ marginTop: 6 }}>
-            Add friends by email, accept requests, block users, open direct chats, create groups, and message yourself.
-          </p>
-        </div>
-        <Link className="btn" to="/chat">
-          Open chat page{badge ? ` (${badge})` : ""}
-        </Link>
-      </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            className="input"
-            placeholder="Friend email (e.g. someone@example.com)"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onRequest();
-            }}
-            style={{ minWidth: 280 }}
-          />
-          <button className="btn" onClick={onRequest} disabled={busy || !email.trim()}>
-            Send request
-          </button>
-          <button className="btn btn-ghost" onClick={refresh} disabled={busy || loading}>
-            Refresh
-          </button>
-        </div>
-        {error ? (
-          <div className="small" style={{ marginTop: 10, color: "var(--danger)" }}>
-            {error}
+      <main className="container stack friends-page">
+        <section className="friends-hero card bg-texture">
+          <div className="friends-hero-copy">
+            <div className="eyebrow">People & conversations</div>
+            <h1 className="friends-hero-title">Manage requests, keep classmates close, and jump straight into chat.</h1>
+            <p className="small muted">
+              Add friends by email, accept or block requests, and open direct conversations without leaving your workspace.
+            </p>
           </div>
-        ) : null}
-      </div>
 
-      {loading ? (
-        <div className="card">Loading…</div>
-      ) : !hasAnything ? (
-        <div className="card">No friends yet. Send a request by email above.</div>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          {data.pending_inbound.length > 0 ? (
-            <section>
-              <h3 style={{ margin: "0 0 8px 0" }}>Incoming requests</h3>
-              <div style={{ display: "grid", gap: 10 }}>
+          <div className="friends-stats" aria-label="Friendship overview">
+            <div className="friends-stat"><span className="friends-stat-value">{counts.accepted}</span><span className="small muted">Friends</span></div>
+            <div className="friends-stat"><span className="friends-stat-value">{counts.inbound}</span><span className="small muted">Incoming</span></div>
+            <div className="friends-stat"><span className="friends-stat-value">{counts.outbound}</span><span className="small muted">Sent</span></div>
+            <div className="friends-stat"><span className="friends-stat-value">{counts.blocked}</span><span className="small muted">Blocked</span></div>
+          </div>
+
+          <div className="friends-hero-actions">
+            <Link className="btn btn-primary" to="/chat">
+              Open chat page{badge ? ` (${badge})` : ""}
+            </Link>
+          </div>
+        </section>
+
+        <section className="card friends-request-card">
+          <div className="section-head">
+            <div>
+              <h2 className="section-title">Add a friend</h2>
+              <div className="section-sub">Send a request by email.</div>
+            </div>
+          </div>
+
+          <div className="friends-request-row">
+            <label className="sr-only" htmlFor="friend-email">Friend email</label>
+            <input
+              id="friend-email"
+              className="input"
+              placeholder="someone@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onRequest();
+              }}
+            />
+            <button className="btn btn-primary" onClick={onRequest} disabled={busy || !email.trim()}>
+              Send request
+            </button>
+            <button className="btn btn-ghost" onClick={refresh} disabled={busy || loading}>
+              Refresh
+            </button>
+          </div>
+
+          {error ? <div className="notice notice-danger small">{error}</div> : null}
+        </section>
+
+        {loading ? (
+          <div className="card">Loading…</div>
+        ) : !hasAnything ? (
+          <div className="empty">
+            <div className="empty-title">No friends yet</div>
+            <div className="empty-sub">Send your first request above to start collaborating.</div>
+          </div>
+        ) : (
+          <div className="friends-sections">
+            {data.pending_inbound.length > 0 ? (
+              <FriendSection title="Incoming requests">
                 {data.pending_inbound.map((r) => (
                   <FriendCard
                     key={r.friend_id}
                     friend={{ id: r.friend_id, email: r.friend_email, name: r.friend_name, avatar_url: r.friend_avatar_url }}
-                    meta={<div className="small muted">Wants to be friends</div>}
+                    meta={<div className="small muted">Wants to connect</div>}
                     actions={
                       <>
-                        <button className="btn" onClick={() => onAccept(r.friend_id)} disabled={busy}>
-                          Accept
-                        </button>
-                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>
-                          Decline
-                        </button>
-                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>
-                          Block
-                        </button>
+                        <button className="btn btn-primary" onClick={() => onAccept(r.friend_id)} disabled={busy}>Accept</button>
+                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>Decline</button>
+                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>Block</button>
                       </>
                     }
                   />
                 ))}
-              </div>
-            </section>
-          ) : null}
+              </FriendSection>
+            ) : null}
 
-          {data.pending_outbound.length > 0 ? (
-            <section>
-              <h3 style={{ margin: "0 0 8px 0" }}>Outgoing requests</h3>
-              <div style={{ display: "grid", gap: 10 }}>
+            {data.pending_outbound.length > 0 ? (
+              <FriendSection title="Outgoing requests">
                 {data.pending_outbound.map((r) => (
                   <FriendCard
                     key={r.friend_id}
                     friend={{ id: r.friend_id, email: r.friend_email, name: r.friend_name, avatar_url: r.friend_avatar_url }}
-                    meta={<div className="small muted">Pending</div>}
+                    meta={<div className="small muted">Awaiting response</div>}
                     actions={
                       <>
-                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>
-                          Cancel
-                        </button>
-                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>
-                          Block
-                        </button>
+                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>Cancel</button>
+                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>Block</button>
                       </>
                     }
                   />
                 ))}
-              </div>
-            </section>
-          ) : null}
+              </FriendSection>
+            ) : null}
 
-          {data.accepted.length > 0 ? (
-            <section>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8 }}><h3 style={{ margin: 0 }}>Friends</h3><Link className="btn btn-ghost" to="/chat/self">Open self chat</Link></div>
-              <div style={{ display: "grid", gap: 10 }}>
+            {data.accepted.length > 0 ? (
+              <FriendSection
+                title="Friends"
+                actions={<Link className="btn btn-ghost" to="/chat/self">Open self chat</Link>}
+              >
                 {data.accepted.map((r) => (
                   <FriendCard
                     key={r.friend_id}
                     friend={{ id: r.friend_id, email: r.friend_email, name: r.friend_name, avatar_url: r.friend_avatar_url }}
-                    meta={<div className="small muted">Accepted</div>}
+                    meta={<div className="small muted">Connected</div>}
                     actions={
                       <>
-                        <Link className="btn" to={`/chat/${r.friend_id}`}>
-                          Chat
-                        </Link>
-                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>
-                          Remove
-                        </button>
-                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>
-                          Block
-                        </button>
+                        <Link className="btn btn-primary" to={`/chat/${r.friend_id}`}>Chat</Link>
+                        <button className="btn btn-ghost" onClick={() => onRemove(r.friend_id)} disabled={busy}>Remove</button>
+                        <button className="btn btn-ghost" onClick={() => onBlock(r.friend_id)} disabled={busy}>Block</button>
                       </>
                     }
                   />
                 ))}
-              </div>
-            </section>
-          ) : null}
+              </FriendSection>
+            ) : null}
 
-          {data.blocked.length > 0 ? (
-            <section>
-              <h3 style={{ margin: "0 0 8px 0" }}>Blocked</h3>
-              <div style={{ display: "grid", gap: 10 }}>
+            {data.blocked.length > 0 ? (
+              <FriendSection title="Blocked">
                 {data.blocked.map((r) => (
                   <FriendCard
                     key={r.friend_id}
                     friend={{ id: r.friend_id, email: r.friend_email, name: r.friend_name, avatar_url: r.friend_avatar_url }}
                     meta={<div className="small muted">Blocked</div>}
                     actions={
-                      <>
-                        <button className="btn btn-ghost" onClick={() => onUnblock(r.friend_id)} disabled={busy}>
-                          Unblock
-                        </button>
-                      </>
+                      <button className="btn btn-ghost" onClick={() => onUnblock(r.friend_id)} disabled={busy}>Unblock</button>
                     }
                   />
                 ))}
-              </div>
-            </section>
-          ) : null}
-        </div>
-      )}
-      </div>
+              </FriendSection>
+            ) : null}
+          </div>
+        )}
+      </main>
     </>
   );
 }

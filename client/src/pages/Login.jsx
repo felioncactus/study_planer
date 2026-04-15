@@ -25,21 +25,35 @@ export default function Login() {
 
   return (
     <div className="auth-shell">
+      <div className="auth-panel auth-panel-copy">
+        <div className="auth-badge">Kepka</div>
+        <h1 className="auth-hero-title">A calmer workspace for courses, tasks, notes, and friends.</h1>
+        <p className="auth-hero-text">
+          Keep your semester organized with a product that feels structured, readable, and built for real daily use.
+        </p>
+        <div className="auth-feature-list">
+          <div className="auth-feature-item"><strong>Plan intelligently</strong><span>Review tasks, classes, and daily timelines in one place.</span></div>
+          <div className="auth-feature-item"><strong>Stay connected</strong><span>Message classmates, manage requests, and keep notes nearby.</span></div>
+          <div className="auth-feature-item"><strong>Move quickly</strong><span>Focused forms, clear hierarchy, and responsive layouts across devices.</span></div>
+        </div>
+      </div>
+
       <div className="auth-card card">
         <div className="auth-header">
-          <div className="title auth-title">Welcome back</div>
-          <div className="muted small">Log in to continue.</div>
+          <div className="auth-badge auth-badge-subtle">Welcome back</div>
+          <div className="title auth-title">Log in to your workspace</div>
+          <div className="muted small">Use your existing account to continue.</div>
         </div>
 
-        <form className="form-grid" onSubmit={onSubmit} style={{ gap: 16 }}>
-          <label className="auth-label">
-            Email
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+        <form className="form-grid auth-form" onSubmit={onSubmit}>
+          <label className="auth-label" htmlFor="email">
+            <span>Email</span>
+            <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
           </label>
 
-          <label className="auth-label">
-            Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="auth-label" htmlFor="password">
+            <span>Password</span>
+            <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
 
           {error ? <div className="notice notice-danger small">{error}</div> : null}

@@ -243,6 +243,7 @@ export default function Tasks() {
         <div className="card">
           <div className="section-title">Create task</div>
           <form
+            id="task-create-form"
             onSubmit={onCreate}
             className="form-grid"
             style={{ marginTop: 12 }}

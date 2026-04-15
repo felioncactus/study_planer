@@ -47,123 +47,6 @@ function renderMarkdown(text) {
   return parts.join("") || "<p></p>";
 }
 
-const styles = {
-  launcher: {
-    position: "fixed",
-    right: 18,
-    bottom: 18,
-    width: 56,
-    height: 56,
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, var(--card-2), var(--card))",
-    color: "var(--fg)",
-    boxShadow: "var(--shadow)",
-    cursor: "pointer",
-    display: "grid",
-    placeItems: "center",
-    zIndex: 9999,
-  },
-  panel: {
-    position: "fixed",
-    right: 18,
-    bottom: 84,
-    width: 380,
-    height: 560,
-    borderRadius: 20,
-    border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, color-mix(in srgb, var(--card-2) 90%, transparent), color-mix(in srgb, var(--bg) 92%, transparent))",
-    color: "var(--fg)",
-    boxShadow: "0 22px 80px rgba(0,0,0,0.42)",
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    zIndex: 9999,
-    backdropFilter: "blur(14px)",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    padding: "14px 14px",
-    borderBottom: "1px solid var(--border)",
-    background: "color-mix(in srgb, var(--card-2) 88%, transparent)",
-  },
-  title: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 3,
-    lineHeight: 1.15,
-  },
-  titleTop: { fontSize: 14, fontWeight: 700 },
-  titleSub: { fontSize: 12, color: "var(--muted)" },
-  closeBtn: {
-    border: "1px solid var(--border)",
-    background: "transparent",
-    color: "var(--fg)",
-    borderRadius: 12,
-    padding: "6px 10px",
-    cursor: "pointer",
-  },
-  body: {
-    flex: 1,
-    overflow: "auto",
-    padding: 14,
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    background: "transparent",
-  },
-  msgRow: (role) => ({
-    display: "flex",
-    justifyContent: role === "user" ? "flex-end" : "flex-start",
-  }),
-  bubble: (role) => ({
-    maxWidth: "88%",
-    alignSelf: role === "user" ? "flex-end" : "flex-start",
-    padding: "12px 14px",
-    borderRadius: 18,
-    border: "1px solid var(--border)",
-    background: role === "user" ? "rgba(124, 124, 255, 0.16)" : "color-mix(in srgb, var(--card) 88%, transparent)",
-    color: "var(--fg)",
-    wordBreak: "break-word",
-    boxShadow: role === "user" ? "0 10px 28px rgba(124,124,255,0.12)" : "none",
-  }),
-  hint: {
-    fontSize: 12,
-    color: "var(--muted)",
-    padding: "10px 14px",
-    borderTop: "1px dashed var(--border)",
-    background: "color-mix(in srgb, var(--card) 72%, transparent)",
-  },
-  form: {
-    display: "flex",
-    gap: 8,
-    padding: 12,
-    borderTop: "1px solid var(--border)",
-    background: "color-mix(in srgb, var(--card-2) 88%, transparent)",
-  },
-  input: {
-    flex: 1,
-    borderRadius: 14,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--fg)",
-    padding: "11px 13px",
-    outline: "none",
-  },
-  sendBtn: {
-    borderRadius: 14,
-    border: "1px solid rgba(124,124,255,0.35)",
-    background: "rgba(124,124,255,0.16)",
-    color: "var(--fg)",
-    padding: "10px 14px",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-};
-
 function MarkdownBubble({ content }) {
   return <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
 }
@@ -185,9 +68,23 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!open) return;
     const el = listRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [open, messages, loading]);
+
+  useEffect(() => {
+    function onToggle() {
+      setOpen((value) => !value);
+    }
+    function onOpen() {
+      setOpen(true);
+    }
+    window.addEventListener("kepka:toggle-assistant", onToggle);
+    window.addEventListener("kepka:open-assistant", onOpen);
+    return () => {
+      window.removeEventListener("kepka:toggle-assistant", onToggle);
+      window.removeEventListener("kepka:open-assistant", onOpen);
+    };
+  }, []);
 
   if (!token) return null;
 
@@ -215,69 +112,74 @@ export default function ChatWidget() {
   }
 
   return (
-    <>
+    <div className={"assistant-shell" + (open ? " is-open" : "")}>
       <button
         type="button"
+        className="assistant-launcher"
         aria-label={open ? "Close assistant" : "Open assistant"}
-        style={styles.launcher}
-        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
       >
-        💬
+        <span aria-hidden="true">✦</span>
+        <span className="assistant-launcher-text">Assistant</span>
       </button>
 
       {open ? (
-        <div style={styles.panel}>
-          <div style={styles.header}>
-            <div style={styles.title}>
-              <div style={styles.titleTop}>Study assistant</div>
-              <div style={styles.titleSub}>Tasks, planning, reminders</div>
+        <section className="assistant-panel" aria-label="Study assistant panel">
+          <header className="assistant-panel-header">
+            <div>
+              <div className="assistant-title">Study assistant</div>
+              <div className="assistant-subtitle">Tasks, planning, reminders</div>
             </div>
-            <button type="button" style={styles.closeBtn} onClick={() => setOpen(false)}>
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
               Close
             </button>
-          </div>
+          </header>
 
-          <div ref={listRef} style={styles.body}>
+          <div ref={listRef} className="assistant-messages">
             {messages.map((message, index) => (
-              <div key={index} style={styles.msgRow(message.role)}>
-                <div style={styles.bubble(message.role)}>
+              <div
+                key={index}
+                className={"assistant-row" + (message.role === "user" ? " is-user" : "")}
+              >
+                <div className={"assistant-bubble" + (message.role === "user" ? " is-user" : "")}>
                   <MarkdownBubble content={message.content} />
                 </div>
               </div>
             ))}
 
             {loading ? (
-              <div style={styles.msgRow("assistant")}>
-                <div style={styles.bubble("assistant")}>
-                  <div className="chat-md">
-                    <p>Thinking…</p>
-                  </div>
+              <div className="assistant-row">
+                <div className="assistant-bubble">
+                  <div className="chat-md"><p>Thinking…</p></div>
                 </div>
               </div>
             ) : null}
           </div>
 
-          <div style={styles.hint}>Markdown like **bold**, *italic*, bullet lists, and `code` now renders properly.</div>
+          <div className="assistant-hint">
+            Markdown like <strong>bold</strong>, <em>italic</em>, lists, and <code>code</code> renders here.
+          </div>
 
           <form
-            style={styles.form}
+            className="assistant-form"
             onSubmit={(e) => {
               e.preventDefault();
               send();
             }}
           >
             <input
-              style={styles.input}
+              className="assistant-input"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Ask about tasks, due dates, or your week..."
             />
-            <button type="submit" style={styles.sendBtn} disabled={loading || !text.trim()}>
+            <button type="submit" className="btn btn-primary" disabled={loading || !text.trim()}>
               Send
             </button>
           </form>
-        </div>
+        </section>
       ) : null}
-    </>
+    </div>
   );
 }

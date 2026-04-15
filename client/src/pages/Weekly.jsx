@@ -44,6 +44,14 @@ function formatClock(value) {
   }).format(parseDateLike(value));
 }
 
+function compareEventsForList(a, b) {
+  const aAllDay = isAllDayLike(a);
+  const bAllDay = isAllDayLike(b);
+  if (aAllDay !== bAllDay) return aAllDay ? -1 : 1;
+  if (aAllDay && bAllDay) return String(a.title || "").localeCompare(String(b.title || ""));
+  return minutesOfDay(a.start) - minutesOfDay(b.start) || minutesOfDay(a.end) - minutesOfDay(b.end);
+}
+
 function minutesOfDay(value) {
   const d = parseDateLike(value);
   return d.getHours() * 60 + d.getMinutes();
@@ -192,6 +200,10 @@ export default function Weekly() {
 
   const allDayEvents = useMemo(() => events.filter((event) => isAllDayLike(event)), [events]);
   const timedEvents = useMemo(() => buildTimedLayouts(events.filter((event) => !isAllDayLike(event))), [events]);
+  const mobileTimelineEvents = useMemo(
+    () => [...events].sort(compareEventsForList),
+    [events]
+  );
 
   const startHour = 6;
   const endHour = 24;
@@ -316,6 +328,54 @@ export default function Weekly() {
                 </div>
               )}
             </div>
+          </div>
+
+
+          <div className="daily-mobile-timeline card lift">
+            <div className="section-title">Timetable</div>
+            <div className="small muted" style={{ marginTop: 4 }}>
+              A simplified schedule view for small screens.
+            </div>
+
+            {loading ? (
+              <div className="daily-mobile-empty">Loading timetable…</div>
+            ) : mobileTimelineEvents.length === 0 ? (
+              <div className="daily-mobile-empty">Nothing scheduled for this day yet.</div>
+            ) : (
+              <div className="daily-mobile-list">
+                {mobileTimelineEvents.map((event) => {
+                  const style = getEventStyle(event, courseMap, taskMap);
+                  const allDay = isAllDayLike(event);
+                  return (
+                    <div
+                      key={event.id}
+                      className="daily-mobile-card"
+                      style={{ borderColor: style.border, background: style.background }}
+                    >
+                      <div className="daily-mobile-time">
+                        {allDay ? "All day" : formatClock(event.start)}
+                      </div>
+                      <div className="daily-mobile-card-main">
+                        <div className="daily-mobile-topline">
+                          <span className="daily-mobile-badge" style={{ color: style.accent }}>{style.label}</span>
+                          {!allDay ? (
+                            <span className="daily-mobile-duration">
+                              {formatClock(event.start)} – {formatClock(event.end)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="daily-mobile-title">{event.title}</div>
+                        {event.meta?.beginsOn || event.meta?.endsOn ? (
+                          <div className="small muted" style={{ marginTop: 6 }}>
+                            {event.meta?.beginsOn || "?"} → {event.meta?.endsOn || "?"}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="daily-timeline">

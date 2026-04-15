@@ -204,10 +204,18 @@ export default function TaskDetail() {
               </label>
             </div>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              {status !== "doing" ? (
+                <button type="button" className="btn btn-ghost" onClick={() => setStatus("doing")}>
+                  Start
+                </button>
+              ) : null}
               <button type="submit" className="btn btn-primary" disabled={saving || !title.trim()}>
                 {saving ? "Saving..." : "Save"}
               </button>
+              <Link to="/chat/task-bot" className="btn btn-ghost">
+                Open reminder bot
+              </Link>
               <div className="small muted">
                 Created: {task.created_at ? new Date(task.created_at).toLocaleString() : "-"}
               </div>

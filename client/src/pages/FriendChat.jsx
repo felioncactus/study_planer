@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -17,44 +18,292 @@ import {
   sendChatMessage,
   voteChatPoll,
 } from "../api/chats.api";
+import { apiListTasks, apiUpdateTask } from "../api/tasks.api";
 import { fetchFriends } from "../api/friends.api";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { formatBytes, renderChatMarkdown } from "../components/chatFormatting";
 
 const EMOJIS = ["😀", "😂", "😍", "🤔", "🔥", "👍", "🎉", "❤️"];
+const QUICK_ACTIONS = [
+  { label: "Bold", token: "**bold**", icon: "bold" },
+  { label: "Italic", token: "*italic*", icon: "italic" },
+  { label: "Heading", token: "# Heading", icon: "heading" },
+  { label: "Ask bot", token: "/bot ", icon: "spark" },
+  { label: "Split plan", token: "/plan ", icon: "split" },
+];
+
+function Icon({ name, size = 18, stroke = 1.8, className = "" }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: stroke,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+    className,
+  };
+
+  switch (name) {
+    case "search":
+      return <svg {...common}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>;
+    case "message":
+      return <svg {...common}><path d="M5 6.5h14a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H9l-5 3v-3H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z" /></svg>;
+    case "group":
+      return <svg {...common}><path d="M8 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" /><path d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" /><path d="M2.5 20a6 6 0 0 1 11 0" /><path d="M13 19a5 5 0 0 1 8.5-2.5" /></svg>;
+    case "self":
+      return <svg {...common}><path d="M12 3v18" /><path d="M8 7h7a3 3 0 0 1 0 6H8Z" /><path d="M8 13h8a3 3 0 0 1 0 6H8Z" /></svg>;
+    case "plus":
+      return <svg {...common}><path d="M12 5v14" /><path d="M5 12h14" /></svg>;
+    case "trash":
+      return <svg {...common}><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
+    case "edit":
+      return <svg {...common}><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z" /></svg>;
+    case "paperclip":
+      return <svg {...common}><path d="m10.5 13.5 6.2-6.2a3 3 0 1 1 4.2 4.2l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.3-8.3" /></svg>;
+    case "send":
+      return <svg {...common}><path d="m3 12 17-8-4 8 4 8-17-8Z" /><path d="M16 12H3" /></svg>;
+    case "spark":
+      return <svg {...common}><path d="m12 3 1.9 4.9L19 10l-5.1 2.1L12 17l-1.9-4.9L5 10l5.1-2.1Z" /></svg>;
+    case "split":
+      return <svg {...common}><path d="M12 5v14" /><path d="M5 8h6" /><path d="M13 16h6" /><path d="m8 5-3 3 3 3" /><path d="m16 13 3 3-3 3" /></svg>;
+    case "heading":
+      return <svg {...common}><path d="M6 6v12" /><path d="M18 6v12" /><path d="M6 12h12" /></svg>;
+    case "bold":
+      return <svg {...common}><path d="M8 6h5a3 3 0 1 1 0 6H8Z" /><path d="M8 12h6a3 3 0 1 1 0 6H8Z" /></svg>;
+    case "italic":
+      return <svg {...common}><path d="M15 4H9" /><path d="M13 20H7" /><path d="m14 4-4 16" /></svg>;
+    case "poll":
+      return <svg {...common}><path d="M5 18V9" /><path d="M12 18V5" /><path d="M19 18v-7" /></svg>;
+    case "timer":
+      return <svg {...common}><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2" /><path d="M9 3h6" /></svg>;
+    case "back":
+      return <svg {...common}><path d="M15 18 9 12l6-6" /></svg>;
+    case "close":
+      return <svg {...common}><path d="m18 6-12 12" /><path d="m6 6 12 12" /></svg>;
+    case "check":
+      return <svg {...common}><path d="m5 12 4 4L19 6" /></svg>;
+    case "bot":
+      return <svg {...common}><rect x="5" y="8" width="14" height="10" rx="3" /><path d="M9 12h.01" /><path d="M15 12h.01" /><path d="M12 8V5" /><path d="M9 18h6" /></svg>;
+    case "clock":
+      return <svg {...common}><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></svg>;
+    case "users":
+      return <svg {...common}><path d="M7.5 12.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M16.5 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path d="M2.5 19a5 5 0 0 1 10 0" /><path d="M14 19a4 4 0 0 1 7.5-1.5" /></svg>;
+    case "more":
+      return <svg {...common}><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>;
+    case "compose":
+      return <svg {...common}><path d="M12 20h9" /><path d="m16.5 3.5 4 4L8 20l-5 1 1-5Z" /></svg>;
+    default:
+      return <svg {...common}><circle cx="12" cy="12" r="8" /></svg>;
+  }
+}
+
+function getInitials(name = "") {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?";
+}
+
+function formatChatTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function formatChatDay(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+
+function startOfDay(dateLike) {
+  const date = new Date(dateLike);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function endOfDay(dateLike) {
+  const date = new Date(dateLike);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+function addDays(dateLike, days) {
+  const date = new Date(dateLike);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function clampTime(value, min, max) {
+  return new Date(Math.min(Math.max(value, min), max));
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderCommandHighlightMarkup(value = "") {
+  const escaped = escapeHtml(value);
+  return escaped
+    .replace(/(^|[\s(])((?:\/bot|\/plan))(?=\s|$)/gm, '$1<span class="chat-command-token">$2</span>')
+    .replace(/\n$/g, "\n ");
+}
+
+function formatTaskDueLabel(value) {
+  if (!value) return "No due date";
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function createTaskReminderTimeline(task) {
+  if (!task?.due_date || task.status === "done") return [];
+  const now = Date.now();
+  const dueAt = endOfDay(task.due_date).getTime();
+  if (Number.isNaN(dueAt)) return [];
+
+  const createdAtRaw = task.created_at ? new Date(task.created_at).getTime() : NaN;
+  const createdAt = Number.isNaN(createdAtRaw) ? startOfDay(task.due_date).getTime() - (7 * 24 * 60 * 60 * 1000) : createdAtRaw;
+  const totalWindow = Math.max(dueAt - createdAt, 24 * 60 * 60 * 1000);
+
+  const stageSpecs = [
+    {
+      key: "perfect",
+      title: "It is the perfect time to start",
+      body: "Starting now keeps this task comfortably on track.",
+      time: clampTime(createdAt + totalWindow * 0.18, createdAt + 60 * 60 * 1000, dueAt - 36 * 60 * 60 * 1000).getTime(),
+      tone: "accent",
+    },
+    {
+      key: "buffer",
+      title: "You still have a little time",
+      body: "There is still room to begin without rushing, but the buffer is shrinking.",
+      time: clampTime(createdAt + totalWindow * 0.55, createdAt + 4 * 60 * 60 * 1000, dueAt - 18 * 60 * 60 * 1000).getTime(),
+      tone: "warning",
+    },
+    {
+      key: "urgent",
+      title: "It is almost too late",
+      body: "This task is getting close to the deadline. Starting now matters.",
+      time: clampTime(dueAt - 8 * 60 * 60 * 1000, createdAt + 8 * 60 * 60 * 1000, dueAt - 30 * 60 * 1000).getTime(),
+      tone: "danger",
+    },
+    {
+      key: "late",
+      title: "You forgot to do this task",
+      body: "The deadline has passed. Re-open it now and decide the next step.",
+      time: dueAt + 60 * 60 * 1000,
+      tone: "danger",
+    },
+  ];
+
+  return stageSpecs
+    .filter((stage, index, stages) => stage.time <= now && stage.time >= createdAt && (index === 0 || stage.time > stages[index - 1].time))
+    .map((stage, index) => ({
+      id: `task-reminder-${task.id}-${stage.key}`,
+      chat_id: "task-reminders",
+      sender_id: null,
+      sender_kind: "bot",
+      sender_name: "Task reminder bot",
+      body: `${stage.title}\n${task.title}`,
+      created_at: new Date(stage.time).toISOString(),
+      attachments: [],
+      metadata: {
+        kind: "task_reminder",
+        reminder: {
+          task_id: task.id,
+          task_title: task.title,
+          due_date: task.due_date,
+          status: task.status,
+          stage_key: stage.key,
+          stage_title: stage.title,
+          stage_body: stage.body,
+          tone: stage.tone,
+          can_start: task.status !== "doing" && task.status !== "done",
+        },
+      },
+      order: stage.time + index,
+    }));
+}
+
+function createReminderBotChat(tasks = []) {
+  const reminderMessages = tasks
+    .flatMap((task) => createTaskReminderTimeline(task))
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  const lastMessage = reminderMessages[reminderMessages.length - 1] || null;
+  const openTasks = tasks.filter((task) => task.status !== "done" && task.due_date).length;
+
+  return {
+    id: "task-reminders",
+    type: "bot",
+    title: "Task reminder bot",
+    created_by: null,
+    participants: [],
+    updated_at: lastMessage?.created_at || new Date().toISOString(),
+    unread_count: 0,
+    last_message_preview: lastMessage?.metadata?.reminder?.stage_title || (openTasks ? `${openTasks} active task reminder${openTasks === 1 ? "" : "s"}` : "No pending reminders"),
+    reminderMessages,
+    reminderTaskCount: openTasks,
+  };
+}
+
+function ChatAvatar({ title, type = "direct" }) {
+  const icon = type === "group" ? "group" : type === "self" ? "self" : type === "bot" ? "bot" : "message";
+  return (
+    <div className={`chat-avatar chat-avatar-${type}`} aria-hidden="true">
+      <span className="chat-avatar-fallback">{getInitials(title)}</span>
+      <Icon name={icon} size={16} className="chat-avatar-icon" />
+    </div>
+  );
+}
 
 function InlineAttachments({ attachments = [] }) {
   const images = attachments.filter((att) => String(att.mime_type || "").startsWith("image/"));
   const files = attachments.filter((att) => !String(att.mime_type || "").startsWith("image/"));
   return (
-    <div style={{ display: "grid", gap: 10, marginTop: attachments.length ? 10 : 0 }}>
+    <div className="chat-attachment-stack">
       {images.length ? (
-        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        <div className="chat-attachment-grid">
           {images.map((att) => (
-            <a key={att.id} href={att.file_url} target="_blank" rel="noreferrer" style={{ display: "block" }}>
+            <a key={att.id} href={att.file_url} target="_blank" rel="noreferrer" className="chat-attachment-image-link">
               <img
                 src={att.file_url}
                 alt={att.original_filename || "chat image"}
-                style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 16, border: "1px solid var(--border)" }}
+                className="chat-attachment-image"
               />
             </a>
           ))}
         </div>
       ) : null}
       {files.length ? (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div className="chat-file-list">
           {files.map((att) => (
             <a
               key={att.id}
               href={att.file_url}
               target="_blank"
               rel="noreferrer"
-              className="btn btn-ghost"
-              style={{ justifyContent: "flex-start" }}
+              className="chat-file-link"
             >
-              📎 {att.original_filename}
-              <span className="small muted" style={{ marginLeft: 8 }}>{formatBytes(att.size_bytes)}</span>
+              <span className="chat-file-link-main">
+                <Icon name="paperclip" size={15} />
+                <span>{att.original_filename}</span>
+              </span>
+              <span className="small muted">{formatBytes(att.size_bytes)}</span>
             </a>
           ))}
         </div>
@@ -63,7 +312,7 @@ function InlineAttachments({ attachments = [] }) {
   );
 }
 
-function PollCard({ message, mine, chatId, meId, onVoted }) {
+function PollCard({ message, meId, onVoted }) {
   const poll = message?.metadata?.poll || {};
   const options = Array.isArray(poll.options) ? poll.options : [];
   const totals = Array.isArray(poll.totals) ? poll.totals : options.map(() => 0);
@@ -71,10 +320,15 @@ function PollCard({ message, mine, chatId, meId, onVoted }) {
   const myVote = Array.isArray(poll.votes) ? poll.votes.find((vote) => String(vote.user_id) === String(meId)) : null;
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 12, background: "var(--surface-soft)" }}>
-      <div style={{ fontWeight: 800 }}>📊 {poll.question || message.body}</div>
-      <div className="small muted" style={{ marginTop: 4 }}>{totalVotes} vote{totalVotes === 1 ? "" : "s"}</div>
-      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+    <div className="chat-structured-card">
+      <div className="chat-structured-head">
+        <span className="chat-structured-icon"><Icon name="poll" size={16} /></span>
+        <div>
+          <div className="chat-structured-title">{poll.question || message.body}</div>
+          <div className="small muted">{totalVotes} vote{totalVotes === 1 ? "" : "s"}</div>
+        </div>
+      </div>
+      <div className="chat-poll-options">
         {options.map((option, index) => {
           const count = Number(totals[index] || 0);
           const percent = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
@@ -83,26 +337,19 @@ function PollCard({ message, mine, chatId, meId, onVoted }) {
             <button
               key={`${option}-${index}`}
               type="button"
-              className="btn btn-ghost"
+              className={`chat-poll-option${active ? " is-active" : ""}`}
               onClick={() => onVoted(index)}
-              style={{
-                justifyContent: "space-between",
-                position: "relative",
-                overflow: "hidden",
-                borderColor: active ? "rgba(124,124,255,0.45)" : undefined,
-                background: active ? "rgba(124,124,255,0.12)" : undefined,
-              }}
             >
-              <span style={{ position: "absolute", inset: 0, width: `${percent}%`, background: "rgba(124,124,255,0.14)" }} />
-              <span style={{ position: "relative", display: "flex", justifyContent: "space-between", width: "100%", gap: 12 }}>
+              <span className="chat-poll-progress" style={{ width: `${percent}%` }} />
+              <span className="chat-poll-option-row">
                 <span>{option}</span>
-                <span className="small muted">{count} • {percent}%</span>
+                <span className="small muted">{count} · {percent}%</span>
               </span>
             </button>
           );
         })}
       </div>
-      {mine && myVote ? <div className="small muted" style={{ marginTop: 8 }}>Your vote is highlighted.</div> : null}
+      {myVote ? <div className="small muted">Your vote is highlighted.</div> : null}
     </div>
   );
 }
@@ -110,75 +357,137 @@ function PollCard({ message, mine, chatId, meId, onVoted }) {
 function TimerCard({ message }) {
   const timer = message?.metadata?.timer || {};
   const [now, setNow] = useState(Date.now());
+
   useEffect(() => {
     const timerId = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timerId);
   }, []);
+
   const endsAt = new Date(timer.ends_at || 0).getTime();
   const remaining = Math.max(0, endsAt - now);
   const done = !!timer.completed_at || remaining <= 0;
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000);
+
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 12, background: "var(--surface-soft)" }}>
-      <div style={{ fontWeight: 800 }}>⏱️ {timer.title || message.body}</div>
-      <div className="small muted" style={{ marginTop: 6 }}>
-        {done ? "Finished" : `Time left ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`}
+    <div className="chat-structured-card">
+      <div className="chat-structured-head">
+        <span className="chat-structured-icon"><Icon name="timer" size={16} /></span>
+        <div>
+          <div className="chat-structured-title">{timer.title || message.body}</div>
+          <div className="small muted">
+            {done ? "Finished" : `Time left ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function MessageBubble({ message, mine, onEdit, onDelete, busy, chatId, meId, onPollVote }) {
+
+function ReminderCard({ message, onStartTask, busy }) {
+  const reminder = message?.metadata?.reminder || {};
+  const dueLabel = formatTaskDueLabel(reminder.due_date);
+
+  return (
+    <div className={`chat-structured-card chat-reminder-card tone-${reminder.tone || "accent"}`}>
+      <div className="chat-structured-head">
+        <span className="chat-structured-icon"><Icon name="bot" size={16} /></span>
+        <div>
+          <div className="chat-structured-title">{reminder.stage_title || "Task reminder"}</div>
+          <div className="small muted">Due {dueLabel}</div>
+        </div>
+      </div>
+
+      <div className="chat-reminder-task-title">{reminder.task_title || "Task"}</div>
+      {reminder.stage_body ? <div className="small muted">{reminder.stage_body}</div> : null}
+
+      <div className="chat-reminder-actions">
+        {reminder.can_start ? (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => onStartTask?.(reminder.task_id)}
+            disabled={busy}
+          >
+            Start to do
+          </button>
+        ) : (
+          <span className="small muted">
+            {reminder.status === "doing" ? "Already in progress" : "Task completed"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({ message, mine, onEdit, onDelete, busy, meId, onPollVote, onStartTask }) {
   const editedAt = message?.metadata?.edited_at;
   const isPoll = message?.metadata?.kind === "poll";
   const isTimer = message?.metadata?.kind === "timer";
+  const isReminder = message?.metadata?.kind === "task_reminder";
+  const senderLabel = message.sender_kind === "bot" ? "Shared bot" : message.sender_name || "User";
+
   return (
-    <div style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
-      <div
-        style={{
-          width: "min(720px, 100%)",
-          padding: 12,
-          borderRadius: 20,
-          border: mine ? "1px solid rgba(124,124,255,0.28)" : "1px solid var(--border)",
-          background: mine ? "linear-gradient(180deg, rgba(124,124,255,0.18), rgba(124,124,255,0.08))" : "var(--card)",
-          boxShadow: mine ? "0 14px 34px rgba(124,124,255,0.12)" : "var(--shadow)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <div className="small muted">{message.sender_kind === "bot" ? "🤖 Bot" : message.sender_name || "User"}</div>
-          {mine ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {!isPoll && !isTimer ? <button className="btn btn-ghost" onClick={() => onEdit(message)} disabled={busy}>Edit</button> : null}
-              <button className="btn btn-ghost" onClick={() => onDelete(message)} disabled={busy}>Delete</button>
-            </div>
-          ) : null}
+    <article className={`message-row${mine ? " mine" : ""}`}>
+      {!mine ? (
+        <div className="message-avatar" aria-hidden="true">
+          {message.sender_kind === "bot" ? <Icon name="bot" size={16} /> : getInitials(senderLabel)}
+        </div>
+      ) : null}
+
+      <div className={`message-bubble${mine ? " mine" : ""}`}>
+        <div className="message-meta-row">
+          <div className="message-author">
+            {message.sender_kind === "bot" ? <Icon name="bot" size={14} /> : null}
+            <span>{senderLabel}</span>
+          </div>
+          <div className="message-meta-actions">
+            <time className="small muted" dateTime={message.created_at}>
+              {formatChatDay(message.created_at)} · {formatChatTime(message.created_at)}
+              {editedAt ? ` · edited ${formatChatTime(editedAt)}` : ""}
+            </time>
+            {mine ? (
+              <div className="message-actions">
+                {!isPoll && !isTimer && !isReminder ? (
+                  <button className="icon-btn" type="button" onClick={() => onEdit(message)} disabled={busy} aria-label="Edit message">
+                    <Icon name="edit" size={15} />
+                  </button>
+                ) : null}
+                <button className="icon-btn" type="button" onClick={() => onDelete(message)} disabled={busy} aria-label="Delete message">
+                  <Icon name="trash" size={15} />
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {isPoll ? (
-          <PollCard message={message} mine={mine} chatId={chatId} meId={meId} onVoted={onPollVote} />
+          <PollCard message={message} meId={meId} onVoted={onPollVote} />
         ) : isTimer ? (
           <TimerCard message={message} />
+        ) : isReminder ? (
+          <ReminderCard message={message} onStartTask={onStartTask} busy={busy} />
         ) : (
           <>
-            <div style={{ whiteSpace: "normal", wordBreak: "break-word" }} dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.body) }} />
+            <div className="message-body" dangerouslySetInnerHTML={{ __html: renderChatMarkdown(message.body) }} />
             <InlineAttachments attachments={Array.isArray(message.attachments) ? message.attachments : []} />
           </>
         )}
-
-        <div className="small muted" style={{ marginTop: 8, textAlign: mine ? "right" : "left" }}>
-          {new Date(message.created_at).toLocaleString()}
-          {editedAt ? ` • edited ${new Date(editedAt).toLocaleString()}` : ""}
-        </div>
       </div>
-    </div>
+    </article>
   );
 }
 
 function GroupCreateCard({ acceptedFriends, onCreate, busy }) {
   const [title, setTitle] = useState("");
   const [selected, setSelected] = useState([]);
-  function toggle(id) { setSelected((curr) => (curr.includes(id) ? curr.filter((x) => x !== id) : [...curr, id])); }
+
+  function toggle(id) {
+    setSelected((curr) => (curr.includes(id) ? curr.filter((x) => x !== id) : [...curr, id]));
+  }
+
   async function submit() {
     const cleanTitle = title.trim();
     if (!cleanTitle || selected.length === 0) return;
@@ -186,26 +495,165 @@ function GroupCreateCard({ acceptedFriends, onCreate, busy }) {
     setTitle("");
     setSelected([]);
   }
+
   return (
-    <div className="card" style={{ marginTop: 16 }}>
-      <h3 style={{ marginTop: 0 }}>Create group chat</h3>
-      <div style={{ display: "grid", gap: 10 }}>
-        <input className="input" placeholder="Group title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <div className="small muted">Select accepted friends to include.</div>
-        <div style={{ display: "grid", gap: 8, maxHeight: 200, overflow: "auto" }}>
-          {acceptedFriends.map((friend) => (
-            <label key={friend.friend_id} className="card" style={{ padding: 10, display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="checkbox" checked={selected.includes(friend.friend_id)} onChange={() => toggle(friend.friend_id)} />
-              <span>{friend.friend_name || friend.friend_email}</span>
-            </label>
-          ))}
+    <section className="chat-sidebar-card">
+      <div className="chat-sidebar-title-row">
+        <div>
+          <h3>Create group</h3>
+          <p className="small muted">Start a focused room for assignments, revisions, or project work.</p>
+        </div>
+        <span className="chat-sidebar-icon"><Icon name="group" size={17} /></span>
+      </div>
+
+      <div className="chat-form-grid">
+        <label>
+          <span className="small">Group name</span>
+          <input className="input" placeholder="Semester project team" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+
+        <div className="small muted">Choose accepted friends to add.</div>
+
+        <div className="chat-member-picker" role="group" aria-label="Select friends for the group">
+          {acceptedFriends.map((friend) => {
+            const checked = selected.includes(friend.friend_id);
+            return (
+              <label key={friend.friend_id} className={`chat-member-option${checked ? " is-selected" : ""}`}>
+                <input type="checkbox" checked={checked} onChange={() => toggle(friend.friend_id)} />
+                <span className="chat-member-avatar" aria-hidden="true">{getInitials(friend.friend_name || friend.friend_email)}</span>
+                <span>{friend.friend_name || friend.friend_email}</span>
+              </label>
+            );
+          })}
           {acceptedFriends.length === 0 ? <div className="small muted">Add friends first to create a group.</div> : null}
         </div>
-        <button className="btn" onClick={submit} disabled={busy || !title.trim() || selected.length === 0}>Create group</button>
+
+        <button className="btn btn-primary" onClick={submit} disabled={busy || !title.trim() || selected.length === 0}>
+          <Icon name="plus" size={16} />
+          Create group
+        </button>
       </div>
+    </section>
+  );
+}
+
+
+function createDefaultPollOptions() {
+  return ["Yes", "No"];
+}
+
+function PollComposer({ question, options, setQuestion, setOptions, validationError, busy, onSubmit }) {
+  function updateOption(index, value) {
+    setOptions((curr) => curr.map((item, itemIndex) => (itemIndex === index ? value : item)));
+  }
+
+  function addOption() {
+    setOptions((curr) => [...curr, ""]);
+  }
+
+  function removeOption(index) {
+    setOptions((curr) => {
+      if (curr.length <= 2) return curr;
+      return curr.filter((_, itemIndex) => itemIndex !== index);
+    });
+  }
+
+  return (
+    <div className="chat-action-form">
+      <label>
+        <span className="small">Poll question</span>
+        <input
+          className="input"
+          placeholder="What should we focus on next?"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          disabled={busy}
+        />
+      </label>
+
+      <div className="chat-action-options">
+        <div className="chat-action-options-head">
+          <span className="small">Answer options</span>
+          <span className="small muted">Minimum 2 required</span>
+        </div>
+
+        <div className="chat-action-option-list">
+          {options.map((option, index) => (
+            <div key={`poll-option-${index}`} className="chat-action-option-row">
+              <span className="chat-action-option-index" aria-hidden="true">
+                {index + 1}
+              </span>
+              <input
+                className="input"
+                placeholder={`Option ${index + 1}`}
+                value={option}
+                onChange={(e) => updateOption(index, e.target.value)}
+                disabled={busy}
+              />
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => removeOption(index)}
+                disabled={busy || options.length <= 2}
+                aria-label={`Remove option ${index + 1}`}
+              >
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" className="btn btn-ghost chat-action-add-btn" onClick={addOption} disabled={busy}>
+          <Icon name="plus" size={15} />
+          Add option
+        </button>
+      </div>
+
+      {validationError ? <div className="chat-action-validation">{validationError}</div> : null}
+
+      <button type="button" className="btn btn-primary chat-action-submit" onClick={onSubmit} disabled={busy}>
+        <Icon name="poll" size={15} />
+        Post poll
+      </button>
     </div>
   );
 }
+
+function TimerComposer({ title, endsAt, setTitle, setEndsAt, validationError, busy, onSubmit }) {
+  return (
+    <div className="chat-action-form">
+      <label>
+        <span className="small">Timer title</span>
+        <input
+          className="input"
+          placeholder="Pomodoro sprint"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          disabled={busy}
+        />
+      </label>
+
+      <label>
+        <span className="small">Ends at</span>
+        <input
+          className="input"
+          type="datetime-local"
+          value={endsAt}
+          onChange={(e) => setEndsAt(e.target.value)}
+          disabled={busy}
+        />
+      </label>
+
+      {validationError ? <div className="chat-action-validation">{validationError}</div> : null}
+
+      <button type="button" className="btn btn-primary chat-action-submit" onClick={onSubmit} disabled={busy}>
+        <Icon name="timer" size={15} />
+        Start timer
+      </button>
+    </div>
+  );
+}
+
 
 export default function FriendChat() {
   const { friendId, chatId } = useParams();
@@ -216,45 +664,87 @@ export default function FriendChat() {
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [friendsData, setFriendsData] = useState({ accepted: [], pending_inbound: [], pending_outbound: [], blocked: [] });
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState([]);
+  const [chatSearch, setChatSearch] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editingBody, setEditingBody] = useState("");
   const [pollQuestion, setPollQuestion] = useState("");
-  const [pollOptions, setPollOptions] = useState("Yes\nNo");
+  const [pollOptions, setPollOptions] = useState(() => createDefaultPollOptions());
   const [timerTitle, setTimerTitle] = useState("");
   const [timerEndsAt, setTimerEndsAt] = useState("");
+  const [toolMenuOpen, setToolMenuOpen] = useState(false);
+  const [toolMenuMode, setToolMenuMode] = useState("poll");
+  const [toolValidationError, setToolValidationError] = useState("");
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
   const fileInputRef = useRef(null);
   const textAreaRef = useRef(null);
+  const toolMenuRef = useRef(null);
 
   const title = useMemo(() => chat?.title || "Chat", [chat]);
-  const canDeleteChat = useMemo(() => !chat ? false : chat.type !== "group" || !chat.created_by || chat.created_by === user?.id, [chat, user?.id]);
+  const canDeleteChat = useMemo(() => (!chat ? false : chat.type !== "group" || !chat.created_by || chat.created_by === user?.id), [chat, user?.id]);
   const imagePreviews = useMemo(() => attachments.filter((file) => String(file.type || "").startsWith("image/")), [attachments]);
+  const reminderBotChat = useMemo(() => createReminderBotChat(tasks), [tasks]);
+  const allChats = useMemo(() => {
+    const next = [...chats];
+    next.unshift(reminderBotChat);
+    return next;
+  }, [chats, reminderBotChat]);
+  const filteredChats = useMemo(() => {
+    const query = chatSearch.trim().toLowerCase();
+    if (!query) return allChats;
+    return allChats.filter((item) => String(item.title || "").toLowerCase().includes(query));
+  }, [allChats, chatSearch]);
+  const participantSummary = useMemo(() => {
+    if (chat?.type === "bot") return `${chat?.reminderTaskCount || 0} active task reminder${chat?.reminderTaskCount === 1 ? "" : "s"}`;
+    if (!Array.isArray(chat?.participants)) return "";
+    return chat.participants
+      .map((participant) => participant.name || participant.email)
+      .filter(Boolean)
+      .join(", ");
+  }, [chat?.participants]);
+  const friendQuickList = useMemo(() => (friendsData.accepted || []).slice(0, 8), [friendsData.accepted]);
+  const totalMessageCount = messages.length;
+  const selectedChatId = chat?.id || chatId || (friendId === "task-bot" ? "task-reminders" : null);
+  const hasSelectedConversation = Boolean(chatId || friendId || chat?.id);
+  const isReminderChat = String(chat?.id || chatId || friendId || "") === "task-reminders" || friendId === "task-bot";
 
   useEffect(() => {
     const nextActiveChatId = chatId || chat?.id || null;
-    setActiveChatId(nextActiveChatId ? String(nextActiveChatId) : null);
+    const nextValue = nextActiveChatId && String(nextActiveChatId) !== "task-reminders" ? String(nextActiveChatId) : null;
+    setActiveChatId(nextValue);
     return () => setActiveChatId(null);
   }, [chat?.id, chatId, setActiveChatId]);
 
   async function refreshSidebar() {
-    const [chatData, friendData] = await Promise.all([fetchChats(), fetchFriends()]);
+    const [chatData, friendData, taskData] = await Promise.all([fetchChats(), fetchFriends(), apiListTasks()]);
     setChats(chatData.chats || []);
     setFriendsData(friendData);
+    setTasks(taskData.tasks || []);
   }
 
   async function ensureChatSelected() {
+    if (chatId && String(chatId) === "task-reminders") {
+      setChat(reminderBotChat);
+      return reminderBotChat.id;
+    }
     if (chatId) {
       const detail = await fetchChat(chatId);
       setChat(detail.chat);
       return detail.chat.id;
+    }
+    if (friendId === "task-bot") {
+      setChat(reminderBotChat);
+      navigate(`/conversations/${reminderBotChat.id}`, { replace: true });
+      return reminderBotChat.id;
     }
     if (friendId === "self") {
       const detail = await fetchSelfChat();
@@ -273,25 +763,39 @@ export default function FriendChat() {
     return null;
   }
 
-  async function refreshMessages(selectedChatId = chat?.id) {
-    if (!selectedChatId) { setMessages([]); return; }
-    const d = await fetchChatMessages(selectedChatId);
-    setMessages(d.messages || []);
+  async function refreshMessages(nextChatId = chat?.id) {
+    if (!nextChatId) {
+      setMessages([]);
+      return;
+    }
+    if (String(nextChatId) === "task-reminders") {
+      setMessages(reminderBotChat.reminderMessages || []);
+      return;
+    }
+    const data = await fetchChatMessages(nextChatId);
+    setMessages(data.messages || []);
   }
 
   async function refreshEverything() {
     setError("");
-    const selectedChatId = await ensureChatSelected();
-    await Promise.all([refreshSidebar(), refreshMessages(selectedChatId)]);
+    const ensuredChatId = await ensureChatSelected();
+    await Promise.all([refreshSidebar(), refreshMessages(ensuredChatId)]);
   }
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       setLoading(true);
-      try { await refreshEverything(); }
-      catch (e) { if (mounted) setError(e?.response?.data?.error?.message || e?.message || "Failed to load chat"); }
-      finally { if (mounted) setLoading(false); }
+      try {
+        await refreshEverything();
+      } catch (e) {
+        if (mounted) {
+          setError(e?.response?.data?.error?.message || e?.message || "Failed to load chat");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     })();
 
     const unsubscribe = subscribe?.(({ event, data }) => {
@@ -301,27 +805,77 @@ export default function FriendChat() {
       refreshEverything().catch(() => {});
     });
 
-    pollRef.current = setInterval(() => { refreshEverything().catch(() => {}); }, 20000);
+    pollRef.current = window.setInterval(() => {
+      refreshEverything().catch(() => {});
+    }, 20000);
 
     return () => {
       mounted = false;
       if (unsubscribe) unsubscribe();
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (pollRef.current) window.clearInterval(pollRef.current);
     };
   }, [friendId, chatId, chat?.id, subscribe]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
+  useEffect(() => {
+    setMobileActionsOpen(false);
+    setToolMenuOpen(false);
+  }, [chatId, friendId]);
+
+  useEffect(() => {
+    if (!isReminderChat) return;
+    setChat(reminderBotChat);
+    setMessages(reminderBotChat.reminderMessages || []);
+  }, [isReminderChat, reminderBotChat]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!toolMenuOpen) return;
+      if (toolMenuRef.current?.contains(event.target)) return;
+      setToolMenuOpen(false);
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") setToolMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [toolMenuOpen]);
+
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  useEffect(() => {
+    document.body.classList.add("chat-page-active");
+    return () => document.body.classList.remove("chat-page-active");
+  }, []);
 
   async function onSend() {
-    if (!chat?.id) return;
+    if (!chat?.id || isReminderChat) return;
     if (!text.trim() && attachments.length === 0) return;
     const nextText = text;
     const nextFiles = attachments;
-    setBusy(true); setError(""); setText(""); setAttachments([]);
+    setBusy(true);
+    setError("");
+    setText("");
+    setAttachments([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    try { await sendChatMessage(chat.id, { body: nextText, attachments: nextFiles }); await refreshEverything(); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to send"); setText(nextText); setAttachments(nextFiles); }
-    finally { setBusy(false); }
+    try {
+      await sendChatMessage(chat.id, { body: nextText, attachments: nextFiles });
+      await refreshEverything();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to send");
+      setText(nextText);
+      setAttachments(nextFiles);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function applyWrap(token) {
@@ -331,200 +885,418 @@ export default function FriendChat() {
   }
 
   async function handleCreateGroup(payload) {
-    try { setBusy(true); const result = await createGroupChat(payload); await refreshSidebar(); navigate(`/conversations/${result.chat.id}`); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to create group"); }
-    finally { setBusy(false); }
+    try {
+      setBusy(true);
+      const result = await createGroupChat(payload);
+      await refreshSidebar();
+      setMobileActionsOpen(false);
+      navigate(`/conversations/${result.chat.id}`);
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to create group");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleStartDirectChat(nextFriendId) {
+    setMobileActionsOpen(false);
+    navigate(`/chat/${nextFriendId}`);
   }
 
   async function handleClearChat() {
     if (!chat?.id || !window.confirm(`Clear all messages in "${title}"?`)) return;
-    try { setBusy(true); setError(""); await clearChat(chat.id); await refreshEverything(); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to clear chat"); }
-    finally { setBusy(false); }
+    try {
+      setBusy(true);
+      setError("");
+      await clearChat(chat.id);
+      await refreshEverything();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to clear chat");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleDeleteChat() {
     if (!chat?.id || !window.confirm(`Delete chat "${title}"? This cannot be undone.`)) return;
     try {
-      setBusy(true); setError(""); await deleteChat(chat.id); await refreshSidebar(); setChat(null); setMessages([]); navigate("/chat", { replace: true });
+      setBusy(true);
+      setError("");
+      await deleteChat(chat.id);
+      await refreshSidebar();
+      setChat(null);
+      setMessages([]);
+      navigate("/chat", { replace: true });
     } catch (e) {
       setError(e?.response?.data?.error?.message || e?.message || "Failed to delete chat");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleEditMessage(message) { setEditingMessage(message); setEditingBody(message.body || ""); setError(""); }
-  function closeEditComposer() { if (!busy) { setEditingMessage(null); setEditingBody(""); } }
+  function handleEditMessage(message) {
+    setEditingMessage(message);
+    setEditingBody(message.body || "");
+    setError("");
+  }
+
+  function closeEditComposer() {
+    if (!busy) {
+      setEditingMessage(null);
+      setEditingBody("");
+    }
+  }
 
   async function submitEditMessage() {
     if (!chat?.id || !editingMessage?.id || !editingBody.trim()) return;
-    try { setBusy(true); setError(""); await editChatMessage(chat.id, editingMessage.id, { body: editingBody.trim() }); await refreshMessages(chat.id); await refreshSidebar(); closeEditComposer(); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to edit message"); }
-    finally { setBusy(false); }
+    try {
+      setBusy(true);
+      setError("");
+      await editChatMessage(chat.id, editingMessage.id, { body: editingBody.trim() });
+      await refreshMessages(chat.id);
+      await refreshSidebar();
+      closeEditComposer();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to edit message");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleDeleteMessage(message) {
     if (!chat?.id || !message?.id || !window.confirm("Delete this message?")) return;
-    try { setBusy(true); setError(""); await deleteChatMessage(chat.id, message.id); await refreshMessages(chat.id); await refreshSidebar(); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to delete message"); }
-    finally { setBusy(false); }
+    try {
+      setBusy(true);
+      setError("");
+      await deleteChatMessage(chat.id, message.id);
+      await refreshMessages(chat.id);
+      await refreshSidebar();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to delete message");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleCreatePoll() {
     if (!chat?.id) return;
-    const options = pollOptions.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    const cleanQuestion = String(pollQuestion || "").trim();
+    const options = Array.isArray(pollOptions)
+      ? pollOptions.map((item) => String(item || "").trim()).filter(Boolean)
+      : [];
+
+    if (!cleanQuestion) {
+      setToolValidationError("Enter a poll question.");
+      return;
+    }
+    if (options.length < 2) {
+      setToolValidationError("Add at least two answer options.");
+      return;
+    }
+
     try {
-      setBusy(true); setError("");
-      await createChatPoll(chat.id, { question: pollQuestion, options });
-      setPollQuestion(""); setPollOptions("Yes\nNo");
+      setBusy(true);
+      setError("");
+      setToolValidationError("");
+      await createChatPoll(chat.id, { question: cleanQuestion, options });
+      setPollQuestion("");
+      setPollOptions(createDefaultPollOptions());
+      setToolMenuOpen(false);
       await refreshEverything();
     } catch (e) {
       setError(e?.response?.data?.error?.message || e?.message || "Failed to create poll");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handlePollVote(messageId, optionIndex) {
     if (!chat?.id) return;
-    try { await voteChatPoll(chat.id, messageId, { optionIndex }); await refreshMessages(chat.id); await refreshSidebar(); }
-    catch (e) { setError(e?.response?.data?.error?.message || e?.message || "Failed to vote"); }
+    try {
+      await voteChatPoll(chat.id, messageId, { optionIndex });
+      await refreshMessages(chat.id);
+      await refreshSidebar();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to vote");
+    }
   }
+
+  async function handleStartTask(taskId) {
+    if (!taskId) return;
+    try {
+      setBusy(true);
+      setError("");
+      await apiUpdateTask(taskId, { status: "doing" });
+
+      const [chatData, friendData, taskData] = await Promise.all([fetchChats(), fetchFriends(), apiListTasks()]);
+      const nextTasks = taskData.tasks || [];
+      const nextReminderChat = createReminderBotChat(nextTasks);
+
+      setChats(chatData.chats || []);
+      setFriendsData(friendData);
+      setTasks(nextTasks);
+
+      if (isReminderChat) {
+        setChat(nextReminderChat);
+        setMessages(nextReminderChat.reminderMessages || []);
+      }
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || e?.message || "Failed to start task");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   async function handleCreateTimer() {
     if (!chat?.id) return;
     try {
-      setBusy(true); setError("");
+      setBusy(true);
+      setError("");
       await createChatTimer(chat.id, { title: timerTitle, endsAt: timerEndsAt || null });
-      setTimerTitle(""); setTimerEndsAt("");
+      setTimerTitle("");
+      setTimerEndsAt("");
       await refreshEverything();
     } catch (e) {
       setError(e?.response?.data?.error?.message || e?.message || "Failed to create timer");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   function addFiles(nextFiles) {
     setAttachments((curr) => {
       const existing = new Map(curr.map((file) => [`${file.name}-${file.size}-${file.lastModified}`, file]));
-      for (const file of nextFiles || []) existing.set(`${file.name}-${file.size}-${file.lastModified}`, file);
+      for (const file of nextFiles || []) {
+        existing.set(`${file.name}-${file.size}-${file.lastModified}`, file);
+      }
       return Array.from(existing.values());
     });
+  }
+
+  function removeAttachment(targetFile) {
+    setAttachments((curr) => curr.filter((file) => `${file.name}-${file.size}-${file.lastModified}` !== `${targetFile.name}-${targetFile.size}-${targetFile.lastModified}`));
+    if (fileInputRef.current && attachments.length <= 1) fileInputRef.current.value = "";
   }
 
   return (
     <>
       <Navbar />
-      <div className="container" style={{ paddingTop: 18, paddingBottom: 32 }}>
-        <div className="friend-chat-layout" style={{ display: "grid", gridTemplateColumns: "minmax(280px, 340px) 1fr", gap: 16, alignItems: "start" }}>
-          <div style={{ display: "grid", gap: 16, position: "sticky", top: 88 }}>
-            <div className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <h3 style={{ margin: 0 }}>Chats</h3>
-                <div className="small muted">Unread {badge}</div>
+      <div className={`container chat-page-shell${hasSelectedConversation ? " has-chat-open" : ""}`}>
+        <div className={`chat-page-header${hasSelectedConversation ? " has-chat-open" : ""}`}>
+          <div>
+            <div className="eyebrow">Conversation hub</div>
+            <h1 className="chat-page-title">Chat built for actual work.</h1>
+            <p className="chat-page-subtitle">
+              Keep direct messages, self notes, polls, timers, and shared bot prompts in one calmer workspace.
+            </p>
+          </div>
+          <div className="chat-page-header-actions">
+            <Link className="btn btn-ghost" to="/friends">
+              <Icon name="back" size={16} />
+              Friends
+            </Link>
+            <button className="btn btn-ghost" type="button" onClick={() => navigate("/chat/self")}>
+              <Icon name="self" size={16} />
+              Notes to self
+            </button>
+          </div>
+        </div>
+
+        <div className={`chat-app-layout${hasSelectedConversation ? " has-chat-open" : ""}`}>
+          <aside className={`chat-sidebar${hasSelectedConversation ? " mobile-hidden" : ""}`}>
+            <section className="chat-sidebar-card chat-sidebar-primary">
+              <div className="chat-sidebar-title-row">
+                <div>
+                  <h2>Inbox</h2>
+                  <p className="small muted">{badge} unread across your space</p>
+                </div>
+                <div className="chat-sidebar-title-actions">
+                  <span className="chat-sidebar-count">{chats.length}</span>
+                  <button
+                    type="button"
+                    className="icon-btn chat-sidebar-mobile-trigger"
+                    onClick={() => setMobileActionsOpen(true)}
+                    aria-label="Open chat actions"
+                    aria-expanded={mobileActionsOpen}
+                    aria-controls="chat-mobile-actions"
+                  >
+                    <Icon name="compose" size={16} />
+                  </button>
+                </div>
               </div>
-              <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                {chats.map((item) => {
-                  const active = String(item.id) === String(chat?.id || chatId || "");
+
+              <label className="chat-search">
+                <Icon name="search" size={16} />
+                <span className="sr-only">Search chats</span>
+                <input
+                  type="search"
+                  placeholder="Search chats"
+                  value={chatSearch}
+                  onChange={(e) => setChatSearch(e.target.value)}
+                />
+              </label>
+
+              <div className="chat-sidebar-list" role="list" aria-label="Conversations">
+                {filteredChats.map((item) => {
+                  const active = String(item.id) === String(selectedChatId || "");
+                  const lastSeen = item.updated_at || item.last_message_at || item.created_at;
                   return (
                     <button
                       key={item.id}
-                      className="btn btn-ghost"
-                      style={{ justifyContent: "space-between", borderColor: active ? "rgba(124,124,255,0.35)" : undefined, background: active ? "rgba(124,124,255,0.10)" : undefined }}
+                      type="button"
+                      className={`chat-list-item${active ? " is-active" : ""}`}
                       onClick={() => navigate(`/conversations/${item.id}`)}
                     >
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {item.type === "group" ? "👥 " : item.type === "self" ? "📝 " : "💬 "}
-                        {item.title}
+                      <ChatAvatar title={item.title} type={item.type} />
+                      <span className="chat-list-copy">
+                        <span className="chat-list-topline">
+                          <span className="chat-list-title">{item.title}</span>
+                          <span className="chat-list-time">{formatChatDay(lastSeen)}</span>
+                        </span>
+                        <span className="chat-list-meta">
+                          <span>{item.type === "group" ? "Group room" : item.type === "self" ? "Private notes" : item.type === "bot" ? "Task reminders" : "Direct chat"}</span>
+                          {item.unread_count ? <span className="chat-unread-pill">{item.unread_count}</span> : null}
+                        </span>
                       </span>
-                      {item.unread_count ? <span className="small muted">{item.unread_count}</span> : null}
                     </button>
                   );
                 })}
-                {chats.length === 0 ? <div className="small muted">No chats yet.</div> : null}
+                {filteredChats.length === 0 ? (
+                  <div className="chat-empty-panel">
+                    <Icon name="message" size={18} />
+                    <div>
+                      <div>No conversations found.</div>
+                      <div className="small muted">Try a different search or start a new chat from your friends list.</div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            </div>
+            </section>
 
-            <div className="card">
-              <h3 style={{ marginTop: 0 }}>Start direct chat</h3>
-              <div style={{ display: "grid", gap: 8 }}>
-                {friendsData.accepted.map((friend) => (
-                  <button key={friend.friend_id} className="btn btn-ghost" onClick={() => navigate(`/chat/${friend.friend_id}`)}>
-                    {friend.friend_name || friend.friend_email}
+            <section className="chat-sidebar-card">
+              <div className="chat-sidebar-title-row">
+                <div>
+                  <h3>Start direct chat</h3>
+                  <p className="small muted">Jump into a conversation with a friend in one tap.</p>
+                </div>
+                <span className="chat-sidebar-icon"><Icon name="users" size={17} /></span>
+              </div>
+
+              <div className="chat-quick-grid">
+                {friendQuickList.map((friend) => (
+                  <button
+                    key={friend.friend_id}
+                    type="button"
+                    className="chat-quick-person"
+                    onClick={() => navigate(`/chat/${friend.friend_id}`)}
+                  >
+                    <span className="chat-member-avatar" aria-hidden="true">{getInitials(friend.friend_name || friend.friend_email)}</span>
+                    <span className="chat-quick-person-copy">
+                      <span>{friend.friend_name || friend.friend_email}</span>
+                      <span className="small muted">Open chat</span>
+                    </span>
                   </button>
                 ))}
-                {friendsData.accepted.length === 0 ? <div className="small muted">No accepted friends yet.</div> : null}
+                {friendQuickList.length === 0 ? <div className="small muted">No accepted friends yet.</div> : null}
               </div>
-            </div>
+            </section>
 
             <GroupCreateCard acceptedFriends={friendsData.accepted || []} onCreate={handleCreateGroup} busy={busy} />
-          </div>
+          </aside>
 
-          <div>
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: 16, borderBottom: "1px solid var(--border)" }}>
-                <div>
-                  <h2 style={{ margin: 0 }}>{title}</h2>
-                  <div className="small muted" style={{ marginTop: 6 }}>{(chat?.participants || []).map((p) => p.name || p.email).join(", ")}</div>
+          <section className={`chat-stage${hasSelectedConversation ? " mobile-visible" : ""}`}>
+            <div className="chat-stage-card">
+              <header className="chat-stage-header">
+                <div className="chat-stage-identity">
+                  <ChatAvatar title={title} type={chat?.type || "direct"} />
+                  <div>
+                    <h2>{title}</h2>
+                    <div className="chat-stage-subcopy">
+                      {participantSummary || "Pick a conversation, start a direct chat, or open your self notes."}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+
+                <div className="chat-stage-actions">
+                  <div className="chat-stage-mobile-top">
+                    <button className="btn btn-ghost chat-mobile-back" type="button" onClick={() => navigate("/chat")}>
+                      <Icon name="back" size={16} />
+                      Chats
+                    </button>
+                    <button
+                      className="btn btn-ghost chat-mobile-menu-trigger"
+                      type="button"
+                      onClick={() => setMobileActionsOpen(true)}
+                      aria-expanded={mobileActionsOpen}
+                      aria-controls="chat-mobile-actions"
+                    >
+                      <Icon name="compose" size={16} />
+                      Menu
+                    </button>
+                  </div>
+                  <div className="chat-stage-stats">
+                    <span><Icon name="message" size={14} /> {totalMessageCount} messages</span>
+                    <span><Icon name="clock" size={14} /> Live updates</span>
+                  </div>
+
                   {chat?.id ? (
-                    <>
-                      <button className="btn btn-ghost" onClick={handleClearChat} disabled={busy}>Clear chat</button>
-                      {canDeleteChat ? <button className="btn btn-ghost" onClick={handleDeleteChat} disabled={busy}>Delete chat</button> : null}
-                    </>
+                    <div className="chat-stage-buttons">
+                      <button className="btn btn-ghost" onClick={handleClearChat} disabled={busy}>
+                        <Icon name="trash" size={15} />
+                        Clear
+                      </button>
+                      {canDeleteChat ? (
+                        <button className="btn btn-ghost" onClick={handleDeleteChat} disabled={busy}>
+                          <Icon name="close" size={15} />
+                          Delete
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
-                  <Link className="btn btn-ghost" to="/friends">← Back</Link>
                 </div>
-              </div>
+              </header>
 
               {loading ? (
-                <div className="card" style={{ margin: 12 }}>Loading…</div>
+                <div className="chat-feedback-card">Loading conversation…</div>
               ) : (
                 <>
-                  {error ? <div className="card" style={{ margin: 12, color: "var(--danger)" }}>{error}</div> : null}
+                  {error ? <div className="chat-feedback-card is-error">{error}</div> : null}
 
-                  <div style={{ padding: 12, borderBottom: "1px solid var(--border)", display: "grid", gap: 12, background: "color-mix(in srgb, var(--card-2) 60%, transparent)" }}>
-                    {chat?.type === "group" ? (
-                      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-                        <div className="card" style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 800 }}>Create poll</div>
-                          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                            <input className="input" placeholder="Poll question" value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} disabled={busy} />
-                            <textarea className="input" rows={4} placeholder="One option per line" value={pollOptions} onChange={(e) => setPollOptions(e.target.value)} disabled={busy} />
-                            <button className="btn btn-ghost" onClick={handleCreatePoll} disabled={busy || !pollQuestion.trim()}>Post poll</button>
-                          </div>
-                        </div>
-
-                        <div className="card" style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 800 }}>Set timer</div>
-                          <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                            <input className="input" placeholder="Timer title" value={timerTitle} onChange={(e) => setTimerTitle(e.target.value)} disabled={busy} />
-                            <input className="input" type="datetime-local" value={timerEndsAt} onChange={(e) => setTimerEndsAt(e.target.value)} disabled={busy} />
-                            <button className="btn btn-ghost" onClick={handleCreateTimer} disabled={busy || !timerEndsAt}>Start timer</button>
-                          </div>
-                        </div>
+                  <div className="chat-tools-strip">
+                    <div className="chat-help-banner">
+                      <Icon name="spark" size={16} />
+                      <div>
+                        Use <code>/bot your question</code> for the shared AI bot. In group chats, <code>/plan ...</code> turns a split-task plan into participant-specific tasks.
                       </div>
-                    ) : null}
-
-                    <div className="small muted">
-                      Use <code>/bot your question</code> for the shared AI bot. Use <code>/plan ...</code> in a group chat to create participant-specific tasks from a split-task plan.
                     </div>
                   </div>
 
-                  <div style={{ minHeight: "56vh", maxHeight: "56vh", overflow: "auto", padding: 16, display: "grid", gap: 12, background: "linear-gradient(180deg, color-mix(in srgb, var(--card-2) 20%, transparent), transparent)" }}>
+                  <div className="chat-message-stream" role="log" aria-live="polite">
                     {!chat?.id ? (
-                      <div className="muted">Pick a chat from the left, start a direct chat, or open self chat.</div>
+                      <div className="chat-empty-state">
+                        <Icon name="message" size={20} />
+                        <h3>Select a conversation</h3>
+                        <p className="muted">Choose a chat from the left, start a direct chat, or open your notes-to-self thread.</p>
+                      </div>
                     ) : messages.length === 0 ? (
-                      <div className="muted">No messages yet. Try markdown, polls, timers, image paste, or the shared bot.</div>
+                      <div className="chat-empty-state">
+                        <Icon name="spark" size={20} />
+                        <h3>This conversation is empty.</h3>
+                        <p className="muted">Send a message, paste an image, ask the bot, or create a poll to get things moving.</p>
+                      </div>
                     ) : (
-                      messages.map((m) => (
+                      messages.map((message) => (
                         <MessageBubble
-                          key={m.id}
-                          message={m}
-                          mine={m.sender_id === user?.id && m.sender_kind === "user"}
+                          key={message.id}
+                          message={message}
+                          mine={message.sender_id === user?.id && message.sender_kind === "user"}
                           onEdit={handleEditMessage}
                           onDelete={handleDeleteMessage}
                           busy={busy}
-                          chatId={chat?.id}
                           meId={user?.id}
-                          onPollVote={(optionIndex) => handlePollVote(m.id, optionIndex)}
+                          onPollVote={(optionIndex) => handlePollVote(message.id, optionIndex)}
+                          onStartTask={handleStartTask}
                         />
                       ))
                     )}
@@ -533,88 +1305,338 @@ export default function FriendChat() {
 
                   {editingMessage ? (
                     <div className="modal-backdrop">
-                      <div className="modal-card" style={{ width: "min(760px, 100%)" }}>
+                      <div className="modal-card chat-edit-modal">
                         <div className="page-header" style={{ marginTop: 0 }}>
                           <div>
                             <h3 style={{ margin: 0 }}>Edit message</h3>
-                            <div className="small muted" style={{ marginTop: 6 }}>Update your message in the chat editor instead of the browser prompt.</div>
+                            <div className="small muted" style={{ marginTop: 6 }}>
+                              Update the content below. Formatting and attachments are preserved.
+                            </div>
                           </div>
-                          <button className="btn btn-ghost" type="button" onClick={closeEditComposer} disabled={busy}>Close</button>
+                          <button className="btn btn-ghost" type="button" onClick={closeEditComposer} disabled={busy}>
+                            <Icon name="close" size={15} />
+                            Close
+                          </button>
                         </div>
-                        <div style={{ display: "grid", gap: 10 }}>
+                        <div className="chat-form-grid">
                           <textarea className="input" value={editingBody} onChange={(e) => setEditingBody(e.target.value)} rows={6} disabled={busy} placeholder="Edit your message…" />
-                          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                          <div className="chat-edit-actions">
                             <button className="btn btn-ghost" type="button" onClick={closeEditComposer} disabled={busy}>Cancel</button>
-                            <button className="btn btn-primary" type="button" onClick={submitEditMessage} disabled={busy || !editingBody.trim()}>Save message</button>
+                            <button className="btn btn-primary" type="button" onClick={submitEditMessage} disabled={busy || !editingBody.trim()}>
+                              <Icon name="check" size={15} />
+                              Save message
+                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
                   ) : null}
 
-                  <div style={{ padding: 16, borderTop: "1px solid var(--border)", background: "var(--card)" }}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                      <button className="btn btn-ghost" onClick={() => applyWrap("**bold**")}>Bold</button>
-                      <button className="btn btn-ghost" onClick={() => applyWrap("*italic*")}>Italic</button>
-                      <button className="btn btn-ghost" onClick={() => applyWrap("# Header")}>Header</button>
-                      <button className="btn btn-ghost" onClick={() => applyWrap("/bot ")}>Ask bot</button>
-                      <button className="btn btn-ghost" onClick={() => applyWrap("/plan ")}>{chat?.type === "group" ? "Split plan" : "Plan command"}</button>
-                      {EMOJIS.map((emoji) => <button key={emoji} className="btn btn-ghost" onClick={() => setText((curr) => `${curr}${emoji}`)}>{emoji}</button>)}
+                  <footer className="chat-composer">
+                    <div className="chat-composer-toolbar" role="toolbar" aria-label="Message formatting">
+                      <div className="chat-composer-actions">
+                        {QUICK_ACTIONS.map((action) => (
+                          <button
+                            key={action.label}
+                            className="chat-toolbar-btn"
+                            type="button"
+                            onClick={() => applyWrap(action.token)}
+                            disabled={!chat?.id || busy || isReminderChat}
+                            title={action.label}
+                          >
+                            <Icon name={action.icon} size={15} />
+                            <span>{action.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="chat-emoji-row" aria-label="Quick emoji">
+                        {EMOJIS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            className="chat-emoji-btn"
+                            type="button"
+                            onClick={() => setText((curr) => `${curr}${emoji}`)}
+                            disabled={!chat?.id || busy || isReminderChat}
+                            aria-label={`Insert ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <textarea
-                        ref={textAreaRef}
-                        className="input"
-                        placeholder="Type a message…"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onPaste={(event) => {
-                          const files = Array.from(event.clipboardData?.files || []).filter((file) => String(file.type || "").startsWith("image/"));
-                          if (files.length) addFiles(files);
-                        }}
-                        rows={4}
-                        style={{ width: "100%", resize: "vertical" }}
-                        disabled={!chat?.id || busy}
-                      />
-                      {imagePreviews.length ? (
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                          {imagePreviews.map((file) => (
-                            <div key={`${file.name}-${file.size}-${file.lastModified}`} className="card" style={{ width: 120, padding: 8 }}>
-                              <img src={URL.createObjectURL(file)} alt={file.name} style={{ width: "100%", height: 80, objectFit: "cover", borderRadius: 10 }} />
-                              <div className="small muted" style={{ marginTop: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.name}</div>
+                    <div className="chat-composer-main">
+                      <label className="chat-composer-field">
+                        <span className="sr-only">Write a message</span>
+                        <div className={`chat-compose-shell${!text ? " is-empty" : ""}`}>
+                          <div
+                            className="chat-compose-highlight"
+                            aria-hidden="true"
+                            dangerouslySetInnerHTML={{ __html: renderCommandHighlightMarkup(text) }}
+                          />
+                          <textarea
+                            ref={textAreaRef}
+                            className="input chat-compose-textarea"
+                            placeholder={
+                              !chat?.id
+                                ? "Choose a chat to start typing."
+                                : isReminderChat
+                                  ? "Task reminder bot is read-only. Use Start to do on a reminder card."
+                                  : "Write a message. Press Ctrl/Cmd + Enter to send."
+                            }
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            onScroll={(e) => {
+                              const overlay = e.currentTarget.parentElement?.querySelector(".chat-compose-highlight");
+                              if (overlay) {
+                                overlay.scrollTop = e.currentTarget.scrollTop;
+                                overlay.scrollLeft = e.currentTarget.scrollLeft;
+                              }
+                            }}
+                            onPaste={(event) => {
+                              const files = Array.from(event.clipboardData?.files || []).filter((file) => String(file.type || "").startsWith("image/"));
+                              if (files.length) addFiles(files);
+                            }}
+                            onKeyDown={(event) => {
+                              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                                event.preventDefault();
+                                onSend();
+                              }
+                            }}
+                            rows={4}
+                            disabled={!chat?.id || busy || isReminderChat}
+                          />
+                        </div>
+                      </label>
+
+                      <div className="chat-composer-footer">
+                        <div className="chat-composer-status">
+                          {chat?.type === "group" && !isReminderChat ? (
+                            <div className="chat-special-menu-wrap" ref={toolMenuRef}>
+                              <button
+                                type="button"
+                                className={`chat-special-menu-trigger${toolMenuOpen ? " is-open" : ""}`}
+                                onClick={() => setToolMenuOpen((current) => !current)}
+                                disabled={!chat?.id || busy}
+                                aria-expanded={toolMenuOpen}
+                                aria-controls="chat-special-menu"
+                              >
+                                <span className="chat-special-menu-trigger-icon" aria-hidden="true">
+                                  <Icon name="plus" size={16} />
+                                </span>
+                                <span className="chat-special-menu-trigger-copy">
+                                  <span>Tools</span>
+                                  <span className="small muted">Polls and timers</span>
+                                </span>
+                              </button>
+
+                              <div
+                                id="chat-special-menu"
+                                className={`chat-special-menu-panel${toolMenuOpen ? " is-open" : ""}`}
+                                aria-hidden={!toolMenuOpen}
+                              >
+                                <div className="chat-special-menu-header">
+                                  <div>
+                                    <div className="chat-special-menu-title">Group tools</div>
+                                    <div className="small muted">Launch a poll or shared timer without leaving the chat.</div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="icon-btn chat-special-menu-close"
+                                    onClick={() => setToolMenuOpen(false)}
+                                    aria-label="Close group tools"
+                                  >
+                                    <Icon name="close" size={15} />
+                                  </button>
+                                </div>
+
+                                <div className="chat-special-menu-tabs" role="tablist" aria-label="Choose a group tool">
+                                  <button
+                                    type="button"
+                                    className={`chat-special-menu-tab${toolMenuMode === "poll" ? " is-active" : ""}`}
+                                    onClick={() => { setToolValidationError(""); setToolMenuMode("poll"); }}
+                                    role="tab"
+                                    aria-selected={toolMenuMode === "poll"}
+                                  >
+                                    <Icon name="poll" size={15} />
+                                    Poll
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={`chat-special-menu-tab${toolMenuMode === "timer" ? " is-active" : ""}`}
+                                    onClick={() => { setToolValidationError(""); setToolMenuMode("timer"); }}
+                                    role="tab"
+                                    aria-selected={toolMenuMode === "timer"}
+                                  >
+                                    <Icon name="timer" size={15} />
+                                    Timer
+                                  </button>
+                                </div>
+
+                                {toolMenuMode === "poll" ? (
+                                  <PollComposer
+                                    question={pollQuestion}
+                                    options={pollOptions}
+                                    setQuestion={setPollQuestion}
+                                    setOptions={setPollOptions}
+                                    validationError={toolValidationError}
+                                    busy={busy}
+                                    onSubmit={handleCreatePoll}
+                                  />
+                                ) : (
+                                  <TimerComposer
+                                    title={timerTitle}
+                                    endsAt={timerEndsAt}
+                                    setTitle={setTimerTitle}
+                                    setEndsAt={setTimerEndsAt}
+                                    validationError={toolValidationError}
+                                    busy={busy}
+                                    onSubmit={handleCreateTimer}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          <label className="chat-attach-btn">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              multiple
+                              onChange={(e) => addFiles(Array.from(e.target.files || []))}
+                              disabled={!chat?.id || busy || isReminderChat}
+                            />
+                            <Icon name="paperclip" size={15} />
+                            <span>Add files</span>
+                          </label>
+                          <span className="small muted">{isReminderChat ? "Start tasks directly from reminders in this thread" : attachments.length ? `${attachments.length} attachment${attachments.length === 1 ? "" : "s"} ready` : "Paste or attach files and images"}</span>
+                        </div>
+
+                        <div className="chat-composer-submit">
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                              setText("");
+                              setAttachments([]);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                            disabled={busy || isReminderChat || (!text && attachments.length === 0)}
+                          >
+                            Clear
+                          </button>
+                          <button className="btn btn-primary" onClick={onSend} disabled={!chat?.id || busy || isReminderChat || (!text.trim() && attachments.length === 0)}>
+                            <Icon name="send" size={15} />
+                            Send
+                          </button>
+                        </div>
+                      </div>
+
+                      {attachments.length ? (
+                        <div className="chat-selected-files" aria-label="Selected attachments">
+                          {attachments.map((file) => (
+                            <div key={`${file.name}-${file.size}-${file.lastModified}`} className="chat-selected-file">
+                              <div className="chat-selected-file-main">
+                                <span className="chat-selected-file-thumb" aria-hidden="true">
+                                  {String(file.type || "").startsWith("image/") ? "🖼️" : "📎"}
+                                </span>
+                                <span className="chat-selected-file-copy">
+                                  <span>{file.name}</span>
+                                  <span className="small muted">{formatBytes(file.size)}</span>
+                                </span>
+                              </div>
+                              <button type="button" className="icon-btn" onClick={() => removeAttachment(file)} aria-label={`Remove ${file.name}`}>
+                                <Icon name="close" size={14} />
+                              </button>
                             </div>
                           ))}
                         </div>
                       ) : null}
-                      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                        <input ref={fileInputRef} type="file" multiple onChange={(e) => addFiles(Array.from(e.target.files || []))} disabled={!chat?.id || busy} />
-                        <div className="small muted">
-                          {attachments.length ? attachments.map((file) => file.name).join(", ") : "Paste or attach files/images"}
+
+                      {imagePreviews.length ? (
+                        <div className="chat-preview-grid">
+                          {imagePreviews.map((file) => (
+                            <div key={`${file.name}-${file.size}-${file.lastModified}`} className="chat-preview-card">
+                              <img src={URL.createObjectURL(file)} alt={file.name} className="chat-preview-image" />
+                              <div className="small muted chat-preview-label">{file.name}</div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                        <button
-                          className="btn btn-ghost"
-                          onClick={() => {
-                            setText("");
-                            setAttachments([]);
-                            if (fileInputRef.current) fileInputRef.current.value = "";
-                          }}
-                          disabled={busy}
-                        >
-                          Clear
-                        </button>
-                        <button className="btn" onClick={onSend} disabled={!chat?.id || busy || (!text.trim() && attachments.length === 0)}>Send</button>
-                      </div>
+                      ) : null}
                     </div>
-                  </div>
+                  </footer>
                 </>
               )}
+
             </div>
-          </div>
+          </section>
         </div>
       </div>
+
+      <div
+        className={"chat-mobile-actions-backdrop" + (mobileActionsOpen ? " is-open" : "")}
+        hidden={!mobileActionsOpen}
+        onClick={() => setMobileActionsOpen(false)}
+      />
+
+      <section
+        id="chat-mobile-actions"
+        className={"chat-mobile-actions-sheet" + (mobileActionsOpen ? " is-open" : "")}
+        aria-hidden={!mobileActionsOpen}
+        aria-label="Chat actions"
+      >
+        <div className="chat-mobile-actions-handle" aria-hidden="true" />
+        <div className="chat-mobile-actions-header">
+          <div>
+            <div className="chat-mobile-actions-title">Chat actions</div>
+            <div className="small muted">Start direct chats, create a group, or open your self chat.</div>
+          </div>
+          <button type="button" className="icon-btn" onClick={() => setMobileActionsOpen(false)} aria-label="Close chat actions">
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+
+        <div className="chat-mobile-actions-grid">
+          <button type="button" className="chat-mobile-action-card" onClick={() => { setMobileActionsOpen(false); navigate("/chat/self"); }}>
+            <span className="chat-mobile-action-icon"><Icon name="self" size={17} /></span>
+            <span className="chat-mobile-action-copy">
+              <span>Notes to self</span>
+              <span className="small muted">Private reminders and drafts</span>
+            </span>
+          </button>
+
+          <div className="chat-mobile-action-section">
+            <div className="chat-mobile-action-section-head">
+              <span className="chat-mobile-action-icon"><Icon name="message" size={16} /></span>
+              <div>
+                <h3>Start direct chat</h3>
+                <p className="small muted">Open a one-to-one thread fast.</p>
+              </div>
+            </div>
+            <div className="chat-mobile-direct-list">
+              {friendQuickList.map((friend) => (
+                <button
+                  key={friend.friend_id}
+                  type="button"
+                  className="chat-mobile-direct-item"
+                  onClick={() => handleStartDirectChat(friend.friend_id)}
+                >
+                  <span className="chat-member-avatar" aria-hidden="true">{getInitials(friend.friend_name || friend.friend_email)}</span>
+                  <span className="chat-mobile-direct-copy">
+                    <span>{friend.friend_name || friend.friend_email}</span>
+                    <span className="small muted">Open chat</span>
+                  </span>
+                </button>
+              ))}
+              {friendQuickList.length === 0 ? <div className="small muted">No accepted friends yet.</div> : null}
+            </div>
+          </div>
+
+          <div className="chat-mobile-group-wrap">
+            <GroupCreateCard acceptedFriends={friendsData.accepted || []} onCreate={handleCreateGroup} busy={busy} />
+          </div>
+        </div>
+      </section>
     </>
   );
 }
