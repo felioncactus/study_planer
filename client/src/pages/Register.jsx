@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 function randomEmail() {
   return `user${Math.floor(Math.random() * 10000)}@example.com`;
@@ -8,6 +9,7 @@ function randomEmail() {
 
 export default function Register() {
   const { user, register } = useAuth();
+  const { language, setLanguage, languages, t } = useLanguage();
   const nav = useNavigate();
 
   const [name, setName] = useState("Test User");
@@ -45,7 +47,7 @@ export default function Register() {
     setError("");
 
     try {
-      await register({ name, email, password, avatarUrl });
+      await register({ name, email, password, avatarUrl, language });
       nav("/dashboard", { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Registration failed");
@@ -90,6 +92,17 @@ export default function Register() {
           <label className="auth-label" htmlFor="password">
             <span>Password</span>
             <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </label>
+
+          <label className="auth-label" htmlFor="language">
+            <span>{t("Language")}</span>
+            <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)}>
+              {languages.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="auth-avatar-row">

@@ -130,41 +130,47 @@ export default function Courses() {
             <section className="course-grid">
               {rest.map((course) => {
                 const metaParts = metaForCourse(course);
+                const courseInitial = course.name?.slice(0, 1)?.toUpperCase() || "C";
                 return (
                   <article key={course.id} className="course-card card lift">
-                    <div className="course-card-top">
-                      <div className="course-card-head">
-                        <span className="course-dot" style={{ background: course.color || "#cbd5e1" }} />
-                        <div>
-                          <Link to={`/courses/${course.id}`} className="course-card-title">
-                            {course.name}
-                          </Link>
-                          <div className="small muted">A focused place for notes, tasks, and schedule details.</div>
-                        </div>
-                      </div>
-
+                    <Link to={`/courses/${course.id}`} className="course-card-media" aria-label={`Open ${course.name}`}>
                       {course.image_url ? (
                         <img className="course-card-image" src={course.image_url} alt={course.name} />
                       ) : (
                         <div className="course-card-image course-card-image-fallback">
-                          <span>{course.name?.slice(0, 1)?.toUpperCase() || "C"}</span>
+                          <span>{courseInitial}</span>
                         </div>
                       )}
-                    </div>
 
-                    <div className="course-card-body">
+                      <div className="course-card-media-shade" />
+                      <div className="course-card-media-copy">
+                        <span className="course-dot" style={{ background: course.color || "#cbd5e1" }} />
+                        <span className="course-card-kicker">Course</span>
+                      </div>
+                    </Link>
+
+                    <div className="course-card-main">
+                      <div className="course-card-head">
+                        <div>
+                          <Link to={`/courses/${course.id}`} className="course-card-title">
+                            {course.name}
+                          </Link>
+                          <div className="course-card-subtitle">Notes, tasks, schedule, and deadlines.</div>
+                        </div>
+                      </div>
+
                       <div className="course-card-description">
                         {course.description || "No course description yet."}
                       </div>
-
-                      {metaParts.length ? (
-                        <div className="course-meta-wrap">
-                          {metaParts.map((item) => (
-                            <span key={item} className="course-chip">{item}</span>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
+
+                    {metaParts.length ? (
+                      <div className="course-meta-wrap">
+                        {metaParts.slice(0, 4).map((item) => (
+                          <span key={item} className="course-chip">{item}</span>
+                        ))}
+                      </div>
+                    ) : null}
 
                     <div className="course-card-actions">
                       <Link to={`/courses/${course.id}`} className="btn btn-ghost">Open</Link>

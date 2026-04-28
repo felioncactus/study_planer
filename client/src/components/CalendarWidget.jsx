@@ -98,6 +98,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
   }, [events]);
 
   const selectedEvents = eventsByDay.get(selected) || [];
+  const detailsLoading = false;
 
   function isToday(d) {
     const now = new Date();
@@ -169,7 +170,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
             <div className="muted small">{selected}</div>
           </div>
 
-          {loading ? (
+          {detailsLoading ? (
             <div className="muted">Loading…</div>
           ) : selectedEvents.length === 0 ? (
             <div className="muted">No events.</div>

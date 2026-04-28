@@ -1,94 +1,89 @@
-# Study Planner (PERN Capstone)
+# Kepka Study Workspace
 
-A Study Planner web app built with:
+Kepka is a full-stack student workspace for courses, tasks, calendar planning, notes, friends, and chat. It is built as a PERN-style app with a React/Vite client, an Express API, and PostgreSQL.
 
-- **PostgreSQL** (database)
-- **Express + Node.js** (API server)
-- **React + Vite** (client)
+The current UI is designed to be responsive across desktop and mobile, with compact navigation, mobile bottom navigation, adaptive cards, polished chat surfaces, and a multilingual interface.
 
----
+## Stack
 
-## Table of contents
+- PostgreSQL
+- Node.js + Express
+- React + Vite
+- Axios
+- JWT authentication
+- OpenAI integration for assistant and planning helpers
 
-- [Repo structure](#repo-structure)
-- [Prerequisites](#prerequisites)
-- [Setup (from scratch)](#setup-from-scratch)
-- [MVP features](#mvp-features)
-- [API endpoints](#api-endpoints)
-- [Scripts](#scripts)
-- [Troubleshooting](#troubleshooting)
-- [Git / secrets](#git--secrets)
-- [Team workflow](#team-workflow)
+## Repo Structure
 
----
-
-## Repo structure
-
-```
-/server   # Express API + PostgreSQL
-/client   # React (Vite) frontend
+```text
+client/   React + Vite frontend
+server/   Express API, repositories, services, migrations, uploads
 ```
 
----
+## Current Features
+
+- Authentication with register, login, profile, avatar, and language preference.
+- Interface language support for English, Russian, Korean, Kazakh, and Uzbek.
+- Dashboard with task summary, upcoming tasks, course shortcuts, quick actions, and calendar overview.
+- Courses with modern course cards, course detail pages, images/banners, schedules, exams, tasks, and notes.
+- Tasks with list-first workflow, filters, attachments, status updates, duration estimation, and AI planning.
+- Activities with list-first workflow and create dialog for fixed events.
+- Daily/weekly calendar views for courses, exams, tasks, planned task blocks, and activities.
+- Friends system with requests, accept/decline, block/unblock, and direct chat entry points.
+- Chat with direct/group/self conversations, attachments, message edit/delete, polls, timers, and live updates.
+- Note editor with course notes and assistant help.
+- Statistics page with task and calendar insights.
+- Mobile-friendly layouts for nav, dashboard, chat, course cards, tasks, activities, and calendar.
+
+## Important Language Note
+
+UI translations are stored locally in the frontend dictionary. Switching interface language does not call OpenAI and does not cost API tokens.
+
+User language is stored in the database on the `users.language` column. If your database was created before language support was added, run migrations from `server/`.
 
 ## Prerequisites
 
-Install these first:
+Install:
 
-- **Node.js (LTS recommended)**  
-  Verify:
-  ```bash
-  node -v
-  npm -v
-  ```
+- Node.js LTS
+- npm
+- PostgreSQL
 
-- **PostgreSQL (local)**  
-  Verify:
-  ```bash
-  psql --version
-  ```
-
-### Windows PATH note (Postgres tools)
-
-If `psql` or `createdb` are “not found” on Windows:
-
-1. Install PostgreSQL
-2. Add Postgres **bin** folder to PATH, e.g.
-   `C:\Program Files\PostgreSQL\16\bin`
-3. Restart your terminal
-
----
-
-## Setup (from scratch)
-
-### 1) Clone the repo
+Check versions:
 
 ```bash
-git clone <YOUR_REPO_URL>
-cd std_planer
+node -v
+npm -v
+psql --version
 ```
 
----
+On Windows, if `psql` or `createdb` are not found, add the PostgreSQL `bin` folder to PATH, for example:
 
-### 2) Environment variables
-
-#### Server
-
-Copy the example env file and edit it:
-
-**macOS / Linux / Git Bash**
-```bash
-cp server/.env.example server/.env
+```text
+C:\Program Files\PostgreSQL\16\bin
 ```
 
-**Windows PowerShell**
+Restart the terminal after changing PATH.
+
+## Environment Setup
+
+### Server Env
+
+Create `server/.env` from `server/.env.example`.
+
+PowerShell:
+
 ```powershell
 Copy-Item server/.env.example server/.env
 ```
 
-Edit `server/.env` and set your local DB password and JWT secret.
+macOS/Linux/Git Bash:
 
-Example `server/.env`:
+```bash
+cp server/.env.example server/.env
+```
+
+Example:
 
 ```env
 PORT=5000
@@ -98,260 +93,347 @@ DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/study_planner
 
 JWT_SECRET=change_me_super_secret
 JWT_EXPIRES_IN=7d
+
+OPENAI_API_KEY=your_key_if_using_ai_features
+OPENAI_MODEL=gpt-4o-mini
 ```
 
-#### Client
+### Client Env
 
-Copy the example env file:
+Create `client/.env` from `client/.env.example`.
 
-**macOS / Linux / Git Bash**
-```bash
-cp client/.env.example client/.env
-```
+PowerShell:
 
-**Windows PowerShell**
 ```powershell
 Copy-Item client/.env.example client/.env
 ```
 
-Example `client/.env`:
+macOS/Linux/Git Bash:
+
+```bash
+cp client/.env.example client/.env
+```
+
+For local Vite proxy usage:
 
 ```env
 VITE_API_BASE_URL=/api
 ```
 
-> We use a **Vite dev proxy**, so the client calls `/api/*` and Vite forwards requests to the backend.
+## Database Setup
 
----
-
-### 3) Create the database
-
-#### Option A: CLI (recommended)
-
-Create the DB:
+Create the database:
 
 ```bash
 createdb -U postgres study_planner
 ```
 
-Enable UUID extension (recommended):
+Enable UUID support:
 
 ```bash
 psql -U postgres -d study_planner -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 ```
 
-#### Option B: pgAdmin
+Run migrations:
 
-- Create a database named `study_planner`
-- Run in Query Tool:
-  ```sql
-  CREATE EXTENSION IF NOT EXISTS pgcrypto;
-  ```
+```bash
+cd server
+npm run migrate
+```
 
----
+Run migrations whenever a new SQL file appears in `server/migrations/`.
 
-### 4) Install dependencies
+Current migrations include schema for users, courses, tasks, calendar blocks, avatars, friends/messages, attachments, course notes, chat polls/timers, course date ranges, and user language.
 
-#### Server
+Recent schema note:
+
+- `012_add_user_language.sql` adds `users.language` with supported values: `en`, `ru`, `ko`, `kk`, `uz`.
+
+## Install Dependencies
+
+Server:
 
 ```bash
 cd server
 npm install
 ```
 
-#### Client
+Client:
 
 ```bash
-cd ../client
+cd client
 npm install
 ```
 
----
+## Run Development
 
-### 5) Run migrations (create tables)
+Use two terminals.
 
-From `server/`:
-
-```bash
-npm run migrate
-```
-
-Expected output:
-
-- First time: `✅ Applied: 001_init.sql`
-- Later runs: `✅ No pending migrations.`
-
-### Migration notes
-
-- This update adds a dedicated **Course Detail** page route (`/courses/:id`) and a **Basic settings** editor inside the course page.
-- **No database/schema changes were required**, so there is **no new migration** to run for this change.
-- In general: whenever a new file appears in `server/migrations/`, run `npm run migrate` from `server/` to apply it.
-
----
-
-### 6) Run the app (development)
-
-You need **two terminals**.
-
-#### Terminal 1 — Server
+Terminal 1, API:
 
 ```bash
 cd server
 npm run dev
 ```
 
-Server runs at: `http://localhost:5000`
+Server runs at:
 
-Quick test: `http://localhost:5000/api/ping`
+```text
+http://localhost:5000
+```
 
-#### Terminal 2 — Client
+Quick API test:
+
+```text
+http://localhost:5000/api/ping
+```
+
+Terminal 2, client:
 
 ```bash
 cd client
 npm run dev
 ```
 
-Client runs at: `http://localhost:5173`
+Client runs at:
 
----
+```text
+http://localhost:5173
+```
 
-## MVP features
+## Scripts
 
-- User accounts (register / login)
-- Courses (create / list / delete)
-- Tasks (create / list / update / delete)
-- Weekly view
-- Task statuses: `todo | doing | done`
-- Dashboard summary endpoint (counts)
+Server scripts, run from `server/`:
 
----
+```bash
+npm run dev      # start Express with nodemon
+npm start        # start Express with node
+npm run migrate  # apply pending SQL migrations
+```
 
-## API endpoints
+Client scripts, run from `client/`:
+
+```bash
+npm run dev      # start Vite dev server
+npm run build    # build production frontend
+npm run preview  # preview production build
+npm run lint     # run ESLint
+```
+
+## API Overview
+
+All protected routes require:
+
+```http
+Authorization: Bearer <token>
+```
 
 ### Auth
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `GET /api/auth/me` (requires `Authorization: Bearer <token>`)
+- `GET /api/auth/me`
 
-### Courses (protected)
+Register supports:
+
+```json
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "Password123!",
+  "avatarUrl": null,
+  "language": "en"
+}
+```
+
+### Users
+
+- Profile/language/avatar update routes are under `/api/users`.
+
+### Courses
 
 - `GET /api/courses`
+- `GET /api/courses/:id`
 - `POST /api/courses`
 - `PUT /api/courses/:id`
 - `DELETE /api/courses/:id`
+- `GET /api/courses/:courseId/notes`
+- `POST /api/courses/:courseId/notes`
 
-Body example:
+Course create/update supports multipart form data for `image` and `banner`.
 
-```json
-{ "name": "CS101", "color": "blue" }
-```
+### Notes
 
-### Tasks (protected)
+- `GET /api/notes/:noteId`
+- `PUT /api/notes/:noteId`
+- `DELETE /api/notes/:noteId`
+- `POST /api/assistant/notes/help`
+
+### Tasks
 
 - `GET /api/tasks`
+- `GET /api/tasks/:id`
 - `POST /api/tasks`
 - `PUT /api/tasks/:id`
 - `DELETE /api/tasks/:id`
 - `GET /api/tasks/summary`
+- `POST /api/tasks/suggestions`
+- `POST /api/tasks/estimate-duration`
+- `POST /api/tasks/ai-plan`
+- `GET /api/tasks/:id/attachments`
+- `POST /api/tasks/:id/attachments`
+- `DELETE /api/tasks/:id/attachments/:attachmentId`
 
-Task body example:
+Useful task list filters:
 
-```json
-{
-  "title": "Homework 1",
-  "dueDate": "2026-01-15",
-  "status": "todo",
-  "courseId": "<uuid>"
-}
+```text
+/api/tasks?status=todo
+/api/tasks?from=YYYY-MM-DD&to=YYYY-MM-DD
+/api/tasks?courseId=<uuid>
 ```
 
-Query filters for listing tasks:
+### Calendar and Activities
 
-- `/api/tasks?status=todo`
-- `/api/tasks?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- `/api/tasks?courseId=<uuid>`
+- `GET /api/calendar/events`
+- `GET /api/activities`
+- `GET /api/activities/:id`
+- `POST /api/activities`
+- `PUT /api/activities/:id`
+- `DELETE /api/activities/:id`
+- `POST /api/activities/ai-plan`
 
----
+### Friends and Chat
 
-## Scripts
+- `GET /api/friends`
+- `POST /api/friends/request`
+- `POST /api/friends/accept`
+- `DELETE /api/friends/:userId`
+- `POST /api/friends/block`
+- `POST /api/friends/unblock`
 
-### Server (run from `server/`)
+- `GET /api/chats`
+- `GET /api/chats/self`
+- `POST /api/chats/direct/:userId`
+- `POST /api/chats/group`
+- `GET /api/chats/:chatId`
+- `DELETE /api/chats/:chatId`
+- `DELETE /api/chats/:chatId/messages`
+- `GET /api/chats/:chatId/messages`
+- `POST /api/chats/:chatId/messages`
+- `PATCH /api/chats/:chatId/messages/:messageId`
+- `DELETE /api/chats/:chatId/messages/:messageId`
+- `POST /api/chats/:chatId/polls`
+- `POST /api/chats/:chatId/polls/:messageId/vote`
+- `POST /api/chats/:chatId/timers`
 
-- `npm run dev` — start API with nodemon
-- `npm start` — start API (production style)
-- `npm run migrate` — apply SQL migrations
+### Assistant and Stats
 
-### Client (run from `client/`)
+- `POST /api/assistant/message`
+- `GET /api/stats`
 
-- `npm run dev` — start Vite dev server
-- `npm run build` — build frontend
-- `npm run preview` — preview production build locally
+AI assistant, planning, and note-help features require `OPENAI_API_KEY` on the server.
 
----
+## Design Notes
+
+- The desktop auth and landing pages are constrained to the viewport to avoid unnecessary page scrolling.
+- Mobile uses compact top navigation plus bottom navigation for core sections.
+- Course cards, chat messages, task/activity cards, dialogs, and dashboard panels have responsive layouts.
+- Language switching is client-side and preserves dynamic values such as dashboard counts.
 
 ## Troubleshooting
 
+### Blank client page
+
+Run:
+
+```bash
+cd client
+npm run build
+```
+
+Then check the browser console. A blank page is usually a frontend runtime error or failed API call.
+
+### Login/register fails
+
+Check:
+
+- Server is running on `http://localhost:5000`
+- Client is running on `http://localhost:5173`
+- `server/.env` has a valid `DATABASE_URL`
+- Migrations have been run
+- `JWT_SECRET` is set
+
 ### DATABASE_URL is missing
 
-- Ensure `server/.env` exists (**not** `.env.txt`)
-- Ensure `server/.env` contains `DATABASE_URL=...`
-- Restart `npm run dev` after changes
+Make sure `server/.env` exists and is not named `.env.txt`.
 
 ### Cannot GET /api/auth/register
 
-That endpoint is **POST**, not GET. Use the React UI or a REST client.
+That route is `POST`, not `GET`. Use the React UI or a REST client.
 
-### Register/Login fails from the client
+### Course day error: invalid input syntax for type smallint
 
-- Ensure **both** server + client are running
-- Test server: `http://localhost:5000/api/ping`
-- Ensure the client is using `/api` via the Vite proxy (`VITE_API_BASE_URL=/api`)
-
-
-### error: invalid input syntax for type smallint: "Tue"
-
-This means your existing database has an older `courses.day_of_week` column stored as a number.
-Run migrations again to auto-fix it:
+Your database has an older `courses.day_of_week` schema. Run:
 
 ```bash
 cd server
 npm run migrate
 ```
 
-This repo includes a migration that converts `day_of_week` to TEXT so values like `Mon/Tue/...` work.
+### Language does not persist
 
-### Postgres tools not found \(Windows\)
+Run migrations and confirm `012_add_user_language.sql` has been applied.
 
-- Install PostgreSQL
-- Add Postgres `bin` folder to PATH
-- Restart terminal
+### AI features fail
 
----
+Set these in `server/.env`:
 
-## Git / secrets
+```env
+OPENAI_API_KEY=your_key
+OPENAI_MODEL=your_model
+```
 
-✅ Commit:
+Then restart the server.
+
+## Git and Secrets
+
+Commit:
 
 - `server/.env.example`
 - `client/.env.example`
+- source files
+- migrations
 
-❌ Do **NOT** commit:
+Do not commit:
 
 - `server/.env`
 - `client/.env`
 - `node_modules/`
-- build output (`dist/`, `build/`)
+- `client/dist/`
+- uploads containing private user data
 
----
+## Team Workflow
 
-## Team workflow
+Create feature branches:
 
-- Create feature branches:
-  ```bash
-  git checkout -b feature/<short-name>
-  ```
-- Commit often with clear messages:
-  - `feat: add tasks CRUD`
-  - `fix: handle auth token`
-- Use PRs to merge into `main` (or `dev` if you use one)
+```bash
+git checkout -b feature/<short-name>
+```
+
+Use clear commit messages:
+
+```text
+feat: add language selector
+fix: preserve dashboard stats while switching language
+style: improve mobile chat composer
+```
+
+Run the relevant checks before sharing changes:
+
+```bash
+cd client
+npm run build
+
+cd ../server
+npm run migrate
+```

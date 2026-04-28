@@ -14,6 +14,7 @@ const updateMeSchema = z.object({
   email: z.string().email().max(255).optional(),
   name: z.string().min(1).max(100).optional(),
   avatarUrl: avatarSchema.optional().nullable(),
+  language: z.enum(["en", "ru", "ko", "kk", "uz"]).optional(),
 });
 
 export async function updateMe(userId, input) {
@@ -22,7 +23,7 @@ export async function updateMe(userId, input) {
     throw badRequest("Invalid update payload", "VALIDATION_ERROR");
   }
 
-  const { email, name, avatarUrl } = parsed.data;
+  const { email, name, avatarUrl, language } = parsed.data;
 
   if (email !== undefined) {
     const existing = await findUserByEmail(email);
@@ -35,6 +36,7 @@ export async function updateMe(userId, input) {
     email,
     name,
     avatarUrl: avatarUrl === undefined ? undefined : avatarUrl,
+    language,
   });
 
   const token = signToken(user);

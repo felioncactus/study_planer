@@ -29,6 +29,7 @@ function startOfWeekMonday(d) {
 }
 
 function StatCard({ label, value, hint, to = "/tasks" }) {
+  const displayValue = value ?? "...";
   return (
     <Link className="card stat lift col-3 dashboard-stat-card" to={to}>
       <div className="stat-top">
@@ -40,7 +41,7 @@ function StatCard({ label, value, hint, to = "/tasks" }) {
           </div>
         ) : null}
       </div>
-      <div className="stat-value">{value}</div>
+      <div className="stat-value">{displayValue}</div>
     </Link>
   );
 }
@@ -61,33 +62,48 @@ export default function Dashboard() {
 
     async function load() {
       setError("");
-      try {
-        const { gridStart, gridEnd } = calendarVisibleRange(new Date());
-        const [s, c, cal] = await Promise.all([
-          apiTaskSummary(),
-          apiListCourses(),
-          apiListCalendarEvents({ start: toYmd(gridStart), end: toYmd(gridEnd) }),
-        ]);
-        if (cancelled) return;
+      const { gridStart, gridEnd } = calendarVisibleRange(new Date());
+      const start = startOfWeekMonday(new Date());
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
 
-        setSummary(s.summary);
-        setCourses(c.courses || []);
-        setCalendarEvents(cal.events || []);
-        setCalendarLoading(false);
+      const [summaryResult, coursesResult, calendarResult, tasksResult] = await Promise.allSettled([
+        apiTaskSummary(),
+        apiListCourses(),
+        apiListCalendarEvents({ start: toYmd(gridStart), end: toYmd(gridEnd) }),
+        apiListTasks({ from: toYmd(start), to: toYmd(end) }),
+      ]);
 
-        // fetch tasks due this week for preview list
-        const start = startOfWeekMonday(new Date());
-        const end = new Date(start);
-        end.setDate(end.getDate() + 6);
+      if (cancelled) return;
 
-        const t = await apiListTasks({ from: toYmd(start), to: toYmd(end) });
-        if (cancelled) return;
+      if (summaryResult.status === "fulfilled") {
+        const nextSummary = summaryResult.value.summary || {};
+        setSummary({
+          overdue: nextSummary.overdue ?? 0,
+          due_today: nextSummary.due_today ?? 0,
+          due_this_week: nextSummary.due_this_week ?? 0,
+          open_total: nextSummary.open_total ?? 0,
+        });
+      } else {
+        setSummary({ overdue: 0, due_today: 0, due_this_week: 0, open_total: 0 });
+      }
 
-        setWeekTasks((t.tasks || []).filter((x) => x.status !== "done"));
-      } catch (err) {
-        if (cancelled) return;
-        setCalendarLoading(false);
-        setError(err?.response?.data?.error?.message || "Failed to load dashboard");
+      if (coursesResult.status === "fulfilled") {
+        setCourses(coursesResult.value.courses || []);
+      }
+
+      if (calendarResult.status === "fulfilled") {
+        setCalendarEvents(calendarResult.value.events || []);
+      }
+      setCalendarLoading(false);
+
+      if (tasksResult.status === "fulfilled") {
+        setWeekTasks((tasksResult.value.tasks || []).filter((x) => x.status !== "done"));
+      }
+
+      const failed = [summaryResult, coursesResult, calendarResult, tasksResult].find((result) => result.status === "rejected");
+      if (failed) {
+        setError(failed.reason?.response?.data?.error?.message || "Some dashboard data could not be loaded");
       }
     }
 

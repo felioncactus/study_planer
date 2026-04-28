@@ -53,6 +53,7 @@ export default function Tasks() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCourseId, setFilterCourseId] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -72,10 +73,7 @@ export default function Tasks() {
     if (qCourse) setCourseId(qCourse);
 
     if (wantsCreate) {
-      requestAnimationFrame(() => {
-        const form = document.getElementById("task-create-form");
-        if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      setCreateOpen(true);
     }
   }, [location.search]);
 
@@ -132,6 +130,7 @@ export default function Tasks() {
       setPlannerData(data.suggestions);
       if (data?.suggestions?.studyWindow)
         setPlannerStudyWindow(data.suggestions.studyWindow);
+      setCreateOpen(false);
       setPlannerOpen(true);
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to load planner");
@@ -176,6 +175,7 @@ export default function Tasks() {
       setSplittable(true);
       setNewFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setCreateOpen(false);
 
       await refresh();
     } catch (err) {
@@ -235,15 +235,28 @@ export default function Tasks() {
               calendar.
             </div>
           </div>
-          <Link to="/courses" className="btn btn-ghost">
-            Go to courses
-          </Link>
+          <div className="row page-actions">
+            <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+              Create task
+            </button>
+            <Link to="/courses" className="btn btn-ghost">
+              Go to courses
+            </Link>
+          </div>
         </div>
 
         {error ? <div className="notice notice-danger">{error}</div> : null}
 
-        <div className="card">
-          <div className="section-title">Create task</div>
+        <div className={`card create-panel task-create-panel${createOpen ? " is-open" : ""}`}>
+          <div className="create-panel-head">
+            <div>
+              <div className="section-title">Create task</div>
+              <div className="small muted">Add details, estimate time, and plan the work block.</div>
+            </div>
+            <button type="button" className="btn btn-ghost" onClick={() => setCreateOpen(false)}>
+              Close
+            </button>
+          </div>
           <form
             id="task-create-form"
             onSubmit={onCreate}
@@ -277,15 +290,7 @@ export default function Tasks() {
               />
               <label
                 htmlFor="attachments"
-                className="btn btn-ghost"
-                style={{
-                  display: "inline-block",
-                  padding: "8px 16px",
-                  border: "1px solid #ccc",
-                  borderRadius: "4px",
-                  backgroundColor: "#f9f9f9",
-                  cursor: "pointer",
-                }}
+                className="btn btn-ghost file-picker-label"
               >
                 Choose files
               </label>
@@ -396,7 +401,7 @@ export default function Tasks() {
           </form>
         </div>
 
-        <div className="card">
+        <div className="card task-list-panel">
           <div className="page-header" style={{ margin: 0 }}>
             <div>
               <div className="section-title">Your tasks</div>

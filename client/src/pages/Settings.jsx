@@ -3,14 +3,17 @@ import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { apiDeleteMe, apiUpdateMe } from "../api/users.api";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Settings() {
   const { user, logout, updateSession } = useAuth();
+  const { language, setLanguage, languages, t } = useLanguage();
   const nav = useNavigate();
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
+  const [profileLanguage, setProfileLanguage] = useState(user?.language || language || "en");
 
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
@@ -20,7 +23,8 @@ export default function Settings() {
     setName(user?.name || "");
     setEmail(user?.email || "");
     setAvatarUrl(user?.avatar_url || null);
-  }, [user]);
+    setProfileLanguage(user?.language || language || "en");
+  }, [user, language]);
 
   const avatarPreview = useMemo(() => avatarUrl, [avatarUrl]);
 
@@ -56,8 +60,10 @@ export default function Settings() {
         name,
         email,
         avatarUrl: avatarUrl || null,
+        language: profileLanguage,
       });
       updateSession(data);
+      setLanguage(profileLanguage);
       setStatus("Saved.");
     } catch (err) {
       setError(err?.response?.data?.message || err.message || "Failed to save");
@@ -139,9 +145,20 @@ export default function Settings() {
                     onChange={(e) => onPickAvatar(e.target.files?.[0] || null)}
                     style={{ display: "none" }}
                   />
-                  <label htmlFor="avatar" className="btn btn-ghost" style={{ display: "inline-flex" }}>
+                  <label htmlFor="avatar" className="btn btn-ghost file-picker-label">
                     Choose file
                   </label>
+                </label>
+
+                <label style={{ marginTop: 8 }}>
+                  {t("Language")}
+                  <select value={profileLanguage} onChange={(e) => setProfileLanguage(e.target.value)}>
+                    {languages.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
 
                 <div className="row" style={{ marginTop: 10 }}>

@@ -16,6 +16,7 @@ const registerSchema = z.object({
   password: z.string().min(8).max(72),
   name: z.string().min(1).max(100),
   avatarUrl: avatarSchema.optional().nullable(),
+  language: z.enum(["en", "ru", "ko", "kk", "uz"]).optional(),
 });
 
 const loginSchema = z.object({
@@ -41,7 +42,7 @@ export async function register(input) {
     throw badRequest("Invalid register payload", "VALIDATION_ERROR");
   }
 
-  const { email, password, name, avatarUrl } = parsed.data;
+  const { email, password, name, avatarUrl, language } = parsed.data;
 
   const existing = await findUserByEmail(email);
   if (existing) {
@@ -50,7 +51,7 @@ export async function register(input) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const user = await createUser({ email, passwordHash, name, avatarUrl: avatarUrl ?? null });
+  const user = await createUser({ email, passwordHash, name, avatarUrl: avatarUrl ?? null, language: language || "en" });
 
   const token = signToken(user);
 
@@ -80,6 +81,7 @@ export async function login(input) {
     email: userWithHash.email,
     name: userWithHash.name,
     avatar_url: userWithHash.avatar_url ?? null,
+    language: userWithHash.language || "en",
     created_at: userWithHash.created_at,
     updated_at: userWithHash.updated_at,
   };

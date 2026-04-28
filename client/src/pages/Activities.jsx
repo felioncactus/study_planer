@@ -45,6 +45,7 @@ export default function Activities() {
   const [plannerLoading, setPlannerLoading] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const totalMinutes = useMemo(() => {
     if (startAt && endAt) {
@@ -83,6 +84,7 @@ export default function Activities() {
       });
       setPlannerData(data.suggestions || null);
       if (data?.suggestions?.studyWindow) setPlannerStudyWindow(data.suggestions.studyWindow);
+      setCreateOpen(false);
       setPlannerOpen(true);
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to load activity planner");
@@ -108,6 +110,7 @@ export default function Activities() {
       setEndAt("");
       setPreferredDate("");
       setDurationMinutes(60);
+      setCreateOpen(false);
       await refresh();
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to create activity");
@@ -133,6 +136,7 @@ export default function Activities() {
       setEndAt("");
       setPreferredDate("");
       setDurationMinutes(60);
+      setCreateOpen(false);
       await refresh();
     } catch (err) {
       setError(err?.response?.data?.error?.message || "Failed to create activity");
@@ -182,12 +186,23 @@ export default function Activities() {
               Create fixed events with the same AI planning flow you already use for tasks.
             </div>
           </div>
+          <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+            Create activity
+          </button>
         </div>
 
         {error ? <div className="notice notice-danger">{error}</div> : null}
 
-        <div className="card">
-          <div className="section-title">Create activity</div>
+        <div className={`card create-panel activity-create-panel${createOpen ? " is-open" : ""}`}>
+          <div className="create-panel-head">
+            <div>
+              <div className="section-title">Create activity</div>
+              <div className="small muted">Use manual times or let the planner suggest a slot.</div>
+            </div>
+            <button type="button" className="btn btn-ghost" onClick={() => setCreateOpen(false)}>
+              Close
+            </button>
+          </div>
           <form onSubmit={openPlanner} className="form-grid" style={{ marginTop: 12 }}>
             <label>
               Title
@@ -290,21 +305,24 @@ export default function Activities() {
           </form>
         </div>
 
-        <div className="card">
+        <div className="card activity-list-panel">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div className="section-title">Your activities</div>
               <div className="small muted">{activities.length} saved block{activities.length === 1 ? "" : "s"}</div>
             </div>
-            <button className="btn btn-ghost" onClick={refresh}>Refresh</button>
+            <div className="row">
+              <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>Create</button>
+              <button className="btn btn-ghost" onClick={refresh}>Refresh</button>
+            </div>
           </div>
 
           {loading ? <div className="small muted" style={{ marginTop: 10 }}>Loading…</div> : null}
           {!loading && !activities.length ? <div className="small muted" style={{ marginTop: 10 }}>No activities yet.</div> : null}
 
-          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+          <div className="activity-card-grid">
             {activities.map((activity) => (
-              <div key={activity.id} className="card" style={{ margin: 0 }}>
+              <div key={activity.id} className="activity-card card" style={{ margin: 0 }}>
                 <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                   <div style={{ display: "grid", gap: 4 }}>
                     <div style={{ fontWeight: 750 }}>{activity.title}</div>
