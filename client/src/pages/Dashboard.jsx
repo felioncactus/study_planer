@@ -28,9 +28,9 @@ function startOfWeekMonday(d) {
   return date;
 }
 
-function StatCard({ label, value, hint }) {
+function StatCard({ label, value, hint, to = "/tasks" }) {
   return (
-    <div className="card stat lift col-3">
+    <Link className="card stat lift col-3 dashboard-stat-card" to={to}>
       <div className="stat-top">
         <div className="stat-label">{label}</div>
         {hint ? (
@@ -41,7 +41,7 @@ function StatCard({ label, value, hint }) {
         ) : null}
       </div>
       <div className="stat-value">{value}</div>
-    </div>
+    </Link>
   );
 }
 
@@ -53,6 +53,7 @@ export default function Dashboard() {
   const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export default function Dashboard() {
   return (
     <>
       <Navbar />
-      <div className="container bg-texture reveal">
+      <div className="container bg-texture reveal dashboard-shell">
         <div className="page-header">
           <div>
             <div className="title">Dashboard</div>
@@ -162,14 +163,14 @@ export default function Dashboard() {
         ) : null}
 
         {/* Overview */}
-        <div className="grid-12" style={{ marginTop: 12 }}>
+        <div className="grid-12 dashboard-stat-grid" style={{ marginTop: 12 }}>
           <StatCard label="Overdue" value={summary ? summary.overdue : "…"} hint="past due" />
           <StatCard label="Due today" value={summary ? summary.due_today : "…"} hint="today" />
           <StatCard label="Due this week" value={summary ? summary.due_this_week : "…"} hint="Mon–Sun" />
           <StatCard label="Open tasks" value={summary ? summary.open_total : "…"} hint="not done" />
         </div>
 
-        <div className="section">
+        <div className="section dashboard-up-next">
           <div className="section-head">
             <div>
               <h2 className="section-title">Up next</h2>
@@ -182,9 +183,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid-12">
+          <div className="dashboard-mobile-tools">
+            <button type="button" className="btn btn-ghost" onClick={() => setMobilePanel("courses")}>
+              Courses
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setMobilePanel("actions")}>
+              Quick actions
+            </button>
+          </div>
+
+          <div className="grid-12 dashboard-next-grid">
             {/* Left: upcoming tasks */}
-            <div className="card lift col-8 accent-edge">
+            <div className="card lift col-8 accent-edge dashboard-upcoming-card">
               {weekTasks.length === 0 ? (
                 <div className="empty">
                   <div className="empty-title">Nothing due this week 🎉</div>
@@ -226,7 +236,7 @@ export default function Dashboard() {
             </div>
 
             {/* Right: courses */}
-            <div className="card lift col-4">
+            <div className="card lift col-4 dashboard-courses-card">
               <div className="section-sub">Your courses</div>
 
               {topCourses.length === 0 ? (
@@ -264,7 +274,7 @@ export default function Dashboard() {
                           <div className="row-meta">
                             {c.day_of_week ? `${c.day_of_week}` : "No day"}{" "}
                             {c.start_time || c.end_time
-                              ? `• ${fmtTime(c.start_time)}${c.start_time && c.end_time ? "–" : ""}${fmtTime(c.end_time)}`
+                              ? `- ${fmtTime(c.start_time)}${c.start_time && c.end_time ? "-" : ""}${fmtTime(c.end_time)}`
                               : ""}
                           </div>
                         </div>
@@ -285,13 +295,13 @@ export default function Dashboard() {
         </div>
 
         {/* Quick actions */}
-        <div className="section">
+        <div className="section dashboard-quick-actions">
           <div className="section-head">
             <h2 className="section-title">Quick actions</h2>
             <div className="section-sub">Common stuff you’ll do a lot</div>
           </div>
 
-          <div className="grid-12">
+          <div className="grid-12 dashboard-actions-grid">
             <div className="card lift col-4">
               <div className="row-title">Create courses</div>
               <div className="row-meta">Set days/times, add a color, optional banner</div>
@@ -323,7 +333,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <div className="section">
+        <div className="section dashboard-schedule">
           <div className="section-head">
             <div>
               <h2 className="section-title">Schedule</h2>
@@ -331,7 +341,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card lift">
+          <div className="card lift dashboard-calendar-card">
             <CalendarWidget
               anchor={calendarAnchor}
               events={calendarEvents}
@@ -341,6 +351,61 @@ export default function Dashboard() {
             />
           </div>
         </div>
+
+        {mobilePanel ? (
+          <div className="mobile-sheet-backdrop is-open" onClick={() => setMobilePanel("")}>
+            <section className="mobile-sheet-card" onClick={(event) => event.stopPropagation()}>
+              <div className="mobile-sheet-handle" aria-hidden="true" />
+              <div className="mobile-sheet-head">
+                <div>
+                  <div className="mobile-sheet-title">
+                    {mobilePanel === "courses" ? "Your courses" : "Quick actions"}
+                  </div>
+                  <div className="small muted">
+                    {mobilePanel === "courses" ? "Course shortcuts for this workspace." : "Common dashboard actions."}
+                  </div>
+                </div>
+                <button type="button" className="icon-btn" onClick={() => setMobilePanel("")} aria-label="Close">
+                  X
+                </button>
+              </div>
+
+              {mobilePanel === "courses" ? (
+                topCourses.length === 0 ? (
+                  <div className="empty">
+                    <div className="empty-title">No courses yet</div>
+                    <div className="empty-sub">Create a course to start organizing tasks and schedules.</div>
+                    <Link className="btn btn-primary" to="/courses">Create course</Link>
+                  </div>
+                ) : (
+                  <div className="list">
+                    {topCourses.map((c) => (
+                      <Link key={c.id} to={`/courses/${c.id}`} className="mobile-sheet-row">
+                        <span className="course-dot" style={{ background: c.color || "rgba(124,124,255,.55)" }} />
+                        <span>
+                          <span className="row-title">{c.name}</span>
+                          <span className="row-meta">
+                            {c.day_of_week ? `${c.day_of_week}` : "No day"}{" "}
+                            {c.start_time || c.end_time
+                              ? `• ${fmtTime(c.start_time)}${c.start_time && c.end_time ? "–" : ""}${fmtTime(c.end_time)}`
+                              : ""}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                    <Link to="/courses" className="btn btn-ghost">Manage courses</Link>
+                  </div>
+                )
+              ) : (
+                <div className="mobile-sheet-actions">
+                  <Link className="btn btn-primary" to="/courses">Go to Courses</Link>
+                  <Link className="btn btn-primary" to="/tasks">Go to Tasks</Link>
+                  <Link className="btn btn-primary" to="/week">Open Weekly</Link>
+                </div>
+              )}
+            </section>
+          </div>
+        ) : null}
 
       </div>
     </>

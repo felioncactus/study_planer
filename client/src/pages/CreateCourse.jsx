@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import RoundTimePicker from "../components/RoundTimePicker";
+import MobileDateField from "../components/MobileDateField";
 import { apiCreateCourse } from "../api/courses.api";
 
 function dateOnly(value) {
@@ -71,7 +72,7 @@ export default function CreateCourse() {
   return (
     <>
       <Navbar />
-      <div style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
+      <div className="create-course-shell" style={{ maxWidth: 980, margin: "24px auto", padding: 16 }}>
         <div className="page-header">
           <div>
             <div className="title">Create course</div>
@@ -89,6 +90,7 @@ export default function CreateCourse() {
         <div className="card">
           <form onSubmit={onCreate} style={{ display: "grid", gap: 12 }}>
             <div
+              className="create-course-two-grid"
               style={{
                 display: "grid",
                 gap: 10,
@@ -137,6 +139,7 @@ export default function CreateCourse() {
             </label>
 
             <div
+              className="create-course-three-grid"
               style={{
                 display: "grid",
                 gap: 10,
@@ -172,47 +175,28 @@ export default function CreateCourse() {
             </div>
 
             <div
+              className="create-course-two-grid"
               style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}
             >
               <label style={{ display: "grid", gap: 6 }}>
-                Course begins
-                <input
-                  type="date"
-                  value={beginsOn}
-                  onChange={(e) => setBeginsOn(e.target.value)}
-                />
+                <MobileDateField label="Course begins" value={beginsOn} onChange={setBeginsOn} />
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
-                Course ends
-                <input
-                  type="date"
-                  value={endsOn}
-                  min={beginsOn || undefined}
-                  onChange={(e) => setEndsOn(e.target.value)}
-                />
+                <MobileDateField label="Course ends" value={endsOn} min={beginsOn || undefined} onChange={setEndsOn} />
               </label>
             </div>
 
             <div
+              className="create-course-two-grid"
               style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}
             >
               <label style={{ display: "grid", gap: 6 }}>
-                Midterm date
-                <input
-                  type="date"
-                  value={midtermDate}
-                  onChange={(e) => setMidtermDate(e.target.value)}
-                />
+                <MobileDateField label="Midterm date" value={midtermDate} onChange={setMidtermDate} />
               </label>
 
               <label style={{ display: "grid", gap: 6 }}>
-                Final date
-                <input
-                  type="date"
-                  value={finalDate}
-                  onChange={(e) => setFinalDate(e.target.value)}
-                />
+                <MobileDateField label="Final date" value={finalDate} onChange={setFinalDate} />
               </label>
             </div>
 

@@ -69,6 +69,7 @@ export default function ActivityPlannerModal({
   const [aiPlan, setAiPlan] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [mobileSlotsOpen, setMobileSlotsOpen] = useState(false);
   const [windowPreset, setWindowPreset] = useState("evening");
   const [customStart, setCustomStart] = useState("18:00");
   const [customEnd, setCustomEnd] = useState("22:00");
@@ -90,6 +91,7 @@ export default function ActivityPlannerModal({
       setAiPlan(null);
       setAiError("");
       setAiLoading(false);
+      setMobileSlotsOpen(false);
     }
   }, [open]);
 
@@ -128,6 +130,12 @@ export default function ActivityPlannerModal({
     onStudyWindowChange?.(win);
   }
 
+  function openSlotsOnMobile() {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+      setMobileSlotsOpen(true);
+    }
+  }
+
   const dayMap = useMemo(() => {
     const map = new Map();
     for (const day of suggestions?.days || []) map.set(day.date, day);
@@ -150,15 +158,15 @@ export default function ActivityPlannerModal({
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-card">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <div>
-            <div style={{ fontWeight: 750, fontSize: 18 }}>Plan this activity</div>
+    <div className="modal-backdrop planner-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="modal-card planner-modal-card">
+        <div className="row planner-modal-header" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div className="planner-modal-title-block">
+            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>Plan this activity</div>
             <div className="small muted">
               Pick a clean time slot first, then save the activity.
             </div>
-            <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+            <div className="row planner-window-row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
               <label className="small muted" style={{ minWidth: 90 }}>Planning window</label>
               <select
                 value={windowPreset}
@@ -194,7 +202,7 @@ export default function ActivityPlannerModal({
             </div>
           </div>
 
-          <button className="btn btn-ghost" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost planner-close-btn" onClick={onClose}>✕</button>
         </div>
 
         <div className="planner-grid">
@@ -226,6 +234,7 @@ export default function ActivityPlannerModal({
                     onClick={() => {
                       setSelectedYmd(ymd);
                       setPicked(null);
+                      openSlotsOnMobile();
                     }}
                   >
                     <span className="small" style={{ fontWeight: 700 }}>{dateObj.getDate()}</span>
@@ -235,8 +244,24 @@ export default function ActivityPlannerModal({
             </div>
           </div>
 
-          <div className="planner-slots">
-            <div style={{ fontWeight: 750, marginBottom: 6 }}>
+          <div className="planner-mobile-slot-launch">
+            <button type="button" className="btn btn-primary" onClick={() => setMobileSlotsOpen(true)}>
+              Suggested windows and AI
+            </button>
+            {picked ? <div className="small muted">A time plan is selected. Open to review or change it.</div> : null}
+          </div>
+
+          <div className={`planner-slots${mobileSlotsOpen ? " is-mobile-open" : ""}`}>
+            <div className="planner-mobile-sheet-head">
+              <div>
+                <div style={{ fontWeight: 750 }}>Suggested windows</div>
+                <div className="small muted">{selectedYmd}</div>
+              </div>
+              <button type="button" className="btn btn-ghost" onClick={() => setMobileSlotsOpen(false)} aria-label="Close suggested windows">
+                X
+              </button>
+            </div>
+            <div className="planner-slots-title" style={{ fontWeight: 750, marginBottom: 6 }}>
               {selectedYmd} • Suggested windows
             </div>
 
@@ -249,7 +274,9 @@ export default function ActivityPlannerModal({
                       key={slot.start}
                       className={"btn " + (isPicked ? "" : "btn-ghost")}
                       disabled={!slot.fits}
-                      onClick={() => setPicked({ start: slot.start, end: slot.end })}
+                      onClick={() => {
+                        setPicked({ start: slot.start, end: slot.end });
+                      }}
                       style={{ justifyContent: "space-between" }}
                       title={slot.fits ? "Use this slot" : `Too short (${slot.freeMinutes}m)`}
                     >
@@ -277,12 +304,12 @@ export default function ActivityPlannerModal({
               {aiError ? <div className="small" style={{ marginTop: 8, color: "crimson" }}>{aiError}</div> : null}
 
               {aiPlan ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+                <div className="planner-ai-plan">
                   <div className="small"><b>Plan:</b> {aiPlan.mode === "split" ? "Split plan" : "Single block"} • {aiPlan.totalMinutes} min</div>
                   {(aiPlan.blocks || []).map((block, index) => (
-                    <div key={index} className="small" style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <div key={index} className="small planner-ai-block">
                       <span>{block.label || activityTitle}</span>
-                      <span style={{ whiteSpace: "nowrap" }}>
+                      <span className="planner-ai-time">
                         {String(block.start).replace("T", " ").slice(0, 16)} → {String(block.end).replace("T", " ").slice(0, 16)}
                       </span>
                     </div>
@@ -294,7 +321,9 @@ export default function ActivityPlannerModal({
                       className="btn btn-ghost"
                       onClick={() => {
                         const first = aiPlan?.blocks?.[0];
-                        if (first) setPicked({ start: first.start, end: first.end });
+                        if (first) {
+                          setPicked({ start: first.start, end: first.end });
+                        }
                       }}
                     >
                       Use first slot
@@ -304,7 +333,7 @@ export default function ActivityPlannerModal({
               ) : null}
             </div>
 
-            <div className="row" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+            <div className="row planner-modal-footer" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
               <button className="btn" disabled={!picked} onClick={() => onConfirm(picked)}>
                 Create activity

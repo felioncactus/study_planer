@@ -1,6 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import RoundTimePicker from "../components/RoundTimePicker";
+import MobileDateField from "../components/MobileDateField";
 import Navbar from "../components/Navbar";
 import ActivityPlannerModal from "../components/ActivityPlannerModal";
 import { apiCreateActivity, apiDeleteActivity, apiListActivities, apiUpdateActivity } from "../api/activities.api";
@@ -173,7 +174,7 @@ export default function Activities() {
   return (
     <>
       <Navbar />
-      <div className="container stack" style={{ marginTop: 18 }}>
+      <div className="container stack activity-page-shell" style={{ marginTop: 18 }}>
         <div className="page-header">
           <div>
             <div className="title">Activities</div>
@@ -205,9 +206,7 @@ export default function Activities() {
               </label>
 
               <label>
-                Preferred date
-                <input type="date" value={preferredDate} onChange={(e) => {
-                  const nextDate = e.target.value;
+                <MobileDateField label="Preferred date" value={preferredDate} onChange={(nextDate) => {
                   setPreferredDate(nextDate);
                   if (nextDate && startAt) setStartAt(`${nextDate}T${startAt.slice(11, 16)}`);
                   if (nextDate && endAt) setEndAt(`${nextDate}T${endAt.slice(11, 16)}`);
@@ -221,17 +220,21 @@ export default function Activities() {
             </div>
 
             <div className="two-col">
-              <label>
-                Manual start
-                <input type="datetime-local" value={startAt} onChange={(e) => {
-                  setStartAt(e.target.value);
-                  if (!endAt && e.target.value) setEndAt(plusMinutes(e.target.value, totalMinutes || 60));
-                }} />
-              </label>
-              <label>
-                Manual end
-                <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
-              </label>
+              <MobileDateField
+                label="Manual start"
+                mode="datetime"
+                value={startAt}
+                onChange={(nextValue) => {
+                  setStartAt(nextValue);
+                  if (!endAt && nextValue) setEndAt(plusMinutes(nextValue, totalMinutes || 60));
+                }}
+              />
+              <MobileDateField
+                label="Manual end"
+                mode="datetime"
+                value={endAt}
+                onChange={setEndAt}
+              />
             </div>
 
             <div className="two-col">

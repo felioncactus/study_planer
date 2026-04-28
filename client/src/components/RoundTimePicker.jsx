@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 const HOURS = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -48,9 +49,19 @@ export default function RoundTimePicker({
 }) {
   const parsed = useMemo(() => parseTime(value), [value]);
   const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 760px)");
+    const update = () => setCompact(query.matches);
+    update();
+    query.addEventListener?.("change", update);
+    return () => query.removeEventListener?.("change", update);
+  }, []);
 
   const minutes = useMemo(() => minuteOptionsFor(parsed.minute), [parsed.minute]);
   const handAngle = ((parsed.displayHour % 12) / 12) * 360 - 90;
+  const clockRadius = compact ? 88 : 112;
 
   function commit(nextHour, nextMinute = parsed.minute, nextMeridiem = parsed.meridiem) {
     onChange?.(toTimeValue(nextHour, nextMinute, nextMeridiem));
@@ -78,7 +89,14 @@ export default function RoundTimePicker({
         </span>
       </button>
 
-      {open ? (
+      {open ? createPortal(
+        <>
+        <button
+          type="button"
+          className="time-popover-backdrop"
+          aria-label="Close time picker"
+          onClick={() => setOpen(false)}
+        />
         <div className="time-popover">
           <div className="time-popover-head">
             <div>
@@ -115,9 +133,8 @@ export default function RoundTimePicker({
             <div className="clock-hand" style={{ transform: `translateY(-50%) rotate(${handAngle}deg)` }} aria-hidden="true" />
             {HOURS.map((hour, index) => {
               const angle = (index / HOURS.length) * Math.PI * 2 - Math.PI / 2;
-              const radius = 112;
-              const x = Math.cos(angle) * radius;
-              const y = Math.sin(angle) * radius;
+              const x = Math.cos(angle) * clockRadius;
+              const y = Math.sin(angle) * clockRadius;
 
               return (
                 <button
@@ -157,6 +174,8 @@ export default function RoundTimePicker({
             ))}
           </div>
         </div>
+        </>,
+        document.body,
       ) : null}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import TaskPlannerModal from "../components/TaskPlannerModal";
+import MobileDateField from "../components/MobileDateField";
 import { apiListCourses } from "../api/courses.api";
 import {
   apiCreateTask,
@@ -51,6 +52,7 @@ export default function Tasks() {
 
   const [filterStatus, setFilterStatus] = useState("");
   const [filterCourseId, setFilterCourseId] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -296,12 +298,7 @@ export default function Tasks() {
 
             <div className="two-col three-col-on-desktop">
               <label>
-                Due date
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
+                <MobileDateField label="Due date" value={dueDate} onChange={setDueDate} />
               </label>
 
               <label>
@@ -408,7 +405,11 @@ export default function Tasks() {
               </div>
             </div>
 
-            <div className="row">
+            <button type="button" className="btn btn-ghost task-mobile-filter-btn" onClick={() => setFiltersOpen(true)}>
+              Filters
+            </button>
+
+            <div className="row task-filter-row">
               <label className="small muted" style={{ minWidth: 120 }}>
                 Status
                 <select
@@ -519,6 +520,51 @@ export default function Tasks() {
           )}
         </div>
       </div>
+
+      {filtersOpen ? (
+        <div className="mobile-sheet-backdrop is-open" onClick={() => setFiltersOpen(false)}>
+          <section className="mobile-sheet-card" onClick={(event) => event.stopPropagation()}>
+            <div className="mobile-sheet-handle" aria-hidden="true" />
+            <div className="mobile-sheet-head">
+              <div>
+                <div className="mobile-sheet-title">Task filters</div>
+                <div className="small muted">Narrow the task list on this phone view.</div>
+              </div>
+              <button type="button" className="icon-btn" onClick={() => setFiltersOpen(false)} aria-label="Close filters">
+                X
+              </button>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Status
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="todo">todo</option>
+                  <option value="doing">doing</option>
+                  <option value="done">done</option>
+                </select>
+              </label>
+
+              <label>
+                Course
+                <select value={filterCourseId} onChange={(e) => setFilterCourseId(e.target.value)}>
+                  <option value="">All</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button type="button" className="btn btn-primary" onClick={() => setFiltersOpen(false)}>
+                Apply filters
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <TaskPlannerModal
         open={plannerOpen}

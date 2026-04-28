@@ -496,6 +496,16 @@ body {
     radial-gradient(980px 620px at top left, rgba(79, 124, 255, 0.08), transparent 58%),
     radial-gradient(720px 520px at 90% 12%, rgba(125, 211, 252, 0.08), transparent 48%),
     linear-gradient(180deg, var(--bg), var(--bg-elevated) 62%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: top left, top right, center;
+}
+
+@media (max-width: 900px) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 ::selection {

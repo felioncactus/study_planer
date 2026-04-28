@@ -62,6 +62,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPlan, setAiPlan] = useState(null);
   const [aiError, setAiError] = useState("");
+  const [mobileSlotsOpen, setMobileSlotsOpen] = useState(false);
 
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
       setAiPlan(null);
       setAiError("");
       setAiLoading(false);
+      setMobileSlotsOpen(false);
     }
   }, [open]);
 
@@ -128,6 +130,12 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
     if (typeof onStudyWindowChange === "function") onStudyWindowChange(win);
   }
 
+  function openSlotsOnMobile() {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches) {
+      setMobileSlotsOpen(true);
+    }
+  }
+
   const dayMap = useMemo(() => {
     const m = new Map();
     for (const d of suggestions?.days ?? []) m.set(d.date, d);
@@ -151,15 +159,15 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-card">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <div>
-            <div style={{ fontWeight: 750, fontSize: 18 }}>Plan this task</div>
+    <div className="modal-backdrop planner-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="modal-card planner-modal-card">
+        <div className="row planner-modal-header" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div className="planner-modal-title-block">
+            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>Plan this task</div>
             <div className="small muted">
               Green = fits in one session • Red = too busy
             </div>
-            <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+            <div className="row planner-window-row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
               <label className="small muted" style={{ minWidth: 90 }}>
                 Planning window
               </label>
@@ -204,7 +212,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
             </div>
 
           </div>
-          <button className="btn btn-ghost" onClick={onClose}>
+          <button className="btn btn-ghost planner-close-btn" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -247,6 +255,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                     onClick={() => {
                       setSelectedYmd(ymd);
                       setPicked(null);
+                      openSlotsOnMobile();
                     }}
                     title={info ? `${info.freeMinutes} free minutes` : "No data"}
                   >
@@ -259,8 +268,24 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
             </div>
           </div>
 
-          <div className="planner-slots">
-            <div style={{ fontWeight: 750, marginBottom: 6 }}>
+          <div className="planner-mobile-slot-launch">
+            <button type="button" className="btn btn-primary" onClick={() => setMobileSlotsOpen(true)}>
+              Best time windows and AI
+            </button>
+            {picked ? <div className="small muted">A time plan is selected. Open to review or change it.</div> : null}
+          </div>
+
+          <div className={`planner-slots${mobileSlotsOpen ? " is-mobile-open" : ""}`}>
+            <div className="planner-mobile-sheet-head">
+              <div>
+                <div style={{ fontWeight: 750 }}>Best time windows</div>
+                <div className="small muted">{selectedYmd}</div>
+              </div>
+              <button type="button" className="btn btn-ghost" onClick={() => setMobileSlotsOpen(false)} aria-label="Close time windows">
+                X
+              </button>
+            </div>
+            <div className="planner-slots-title" style={{ fontWeight: 750, marginBottom: 6 }}>
               {selectedYmd} • Best time windows
             </div>
             {selectedInfo?.slots?.length ? (
@@ -273,7 +298,9 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                       key={s.start}
                       className={"btn " + (isPicked ? "" : "btn-ghost")}
                       disabled={!can}
-                      onClick={() => setPicked({ start: s.start, end: s.end })}
+                      onClick={() => {
+                        setPicked({ start: s.start, end: s.end });
+                      }}
                       title={can ? "Click to pick this window" : `Too short (${s.freeMinutes}m)`}
                       style={{ justifyContent: "space-between" }}
                     >
@@ -310,16 +337,16 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
               {aiError ? <div className="small" style={{ marginTop: 8, color: "crimson" }}>{aiError}</div> : null}
 
               {aiPlan ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                  <div className="small">
+                <div className="planner-ai-plan">
+                  <div className="small planner-ai-summary">
                     <b>Plan:</b> {aiPlan.mode === "split" ? "Split into parts" : "Single block"} • Total {aiPlan.totalMinutes} min
                   </div>
 
-                  <div style={{ display: "grid", gap: 6 }}>
+                  <div className="planner-ai-blocks">
                     {aiPlan.blocks?.map((b, i) => (
-                      <div key={i} className="small" style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div key={i} className="small planner-ai-block">
                         <span>{b.label || taskTitle}</span>
-                        <span style={{ whiteSpace: "nowrap" }}>
+                        <span className="planner-ai-time">
                           {String(b.start).replace("T", " ").slice(0, 16)} → {String(b.end).replace("T", " ").slice(0, 16)} ({b.minutes}m)
                         </span>
                       </div>
@@ -348,7 +375,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
               ) : null}
             </div>
 
-            <div className="row" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+            <div className="row planner-modal-footer" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
               <button className="btn btn-ghost" onClick={onClose}>
                 Cancel
               </button>

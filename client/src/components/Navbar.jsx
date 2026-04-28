@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -52,6 +52,8 @@ function Icon({ name, size = 16 }) {
       return <svg {...common}><path d="m12 3 1.8 4.7L18.5 9l-4.7 1.3L12 15l-1.8-4.7L5.5 9l4.7-1.3Z" /><path d="M18 16.5 19 19l2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z" /></svg>;
     case "more":
       return <svg {...common}><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>;
+    case "close":
+      return <svg {...common}><path d="m18 6-12 12" /><path d="m6 6 12 12" /></svg>;
     default:
       return <svg {...common}><circle cx="12" cy="12" r="8" /></svg>;
   }
@@ -82,6 +84,8 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { badge: friendBadge } = useNotifications();
   const [moreOpen, setMoreOpen] = useState(false);
+  const moreSheetRef = useRef(null);
+  const moreDragRef = useRef({ startY: 0, dragging: false });
 
   useEffect(() => {
     setMoreOpen(false);
@@ -105,6 +109,39 @@ export default function Navbar() {
   function toggleAssistant() {
     window.dispatchEvent(new CustomEvent("kepka:toggle-assistant"));
     setMoreOpen(false);
+  }
+
+  function closeMoreMenu() {
+    const sheet = moreSheetRef.current;
+    if (sheet) {
+      sheet.style.setProperty("--sheet-drag-y", "0px");
+      sheet.classList.remove("is-dragging");
+    }
+    setMoreOpen(false);
+  }
+
+  function handleMoreTouchStart(event) {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    moreDragRef.current = { startY: touch.clientY, dragging: true };
+    moreSheetRef.current?.classList.add("is-dragging");
+  }
+
+  function handleMoreTouchMove(event) {
+    if (!moreDragRef.current.dragging) return;
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    const deltaY = Math.max(0, touch.clientY - moreDragRef.current.startY);
+    moreSheetRef.current?.style.setProperty("--sheet-drag-y", `${deltaY}px`);
+  }
+
+  function handleMoreTouchEnd() {
+    const sheet = moreSheetRef.current;
+    const dragValue = Number.parseFloat(sheet?.style.getPropertyValue("--sheet-drag-y") || "0");
+    moreDragRef.current = { startY: 0, dragging: false };
+    sheet?.classList.remove("is-dragging");
+    sheet?.style.setProperty("--sheet-drag-y", "0px");
+    if (dragValue > 72) setMoreOpen(false);
   }
 
   return (
@@ -239,9 +276,14 @@ export default function Navbar() {
 
       <section
         id="mobile-more-sheet"
+        ref={moreSheetRef}
         className={"mobile-more-sheet" + (moreOpen ? " is-open" : "")}
         aria-label="More navigation and account actions"
         aria-hidden={!moreOpen}
+        onTouchStart={handleMoreTouchStart}
+        onTouchMove={handleMoreTouchMove}
+        onTouchEnd={handleMoreTouchEnd}
+        onTouchCancel={handleMoreTouchEnd}
       >
         <div className="mobile-more-handle" aria-hidden="true" />
         <div className="mobile-more-header">
@@ -249,12 +291,17 @@ export default function Navbar() {
             <div className="mobile-more-title">More</div>
             <div className="small muted">Extra destinations and account actions</div>
           </div>
-          <div className="avatar mobile-more-avatar" title={user?.name || user?.email || ""}>
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt={`${user?.name || "User"} avatar`} />
-            ) : (
-              <span className="small">{initials(user?.name || user?.email)}</span>
-            )}
+          <div className="mobile-more-header-actions">
+            <div className="avatar mobile-more-avatar" title={user?.name || user?.email || ""}>
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt={`${user?.name || "User"} avatar`} />
+              ) : (
+                <span className="small">{initials(user?.name || user?.email)}</span>
+              )}
+            </div>
+            <button type="button" className="mobile-more-close" onClick={closeMoreMenu} aria-label="Close menu">
+              <Icon name="close" size={18} />
+            </button>
           </div>
         </div>
 
