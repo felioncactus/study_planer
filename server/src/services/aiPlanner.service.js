@@ -1,9 +1,17 @@
 import { badRequest } from "../utils/httpError.js";
 import { listCalendarBlocksByUserId } from "../repositories/calendarBlocks.repo.js";
 import { getUserSettings } from "../repositories/userSettings.repo.js";
+import { findUserById } from "../repositories/users.repo.js";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const SEOUL_OFFSET_MINUTES = 9 * 60;
+const LANGUAGE_NAMES = {
+  en: "English",
+  ru: "Russian",
+  ko: "Korean",
+  kk: "Kazakh",
+  uz: "Uzbek",
+};
 
 function assertOpenAIKey() {
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is missing. Add it to server/.env");
@@ -184,7 +192,8 @@ export async function aiPlanTaskForUser(userId, { title, description, dueDate, e
   if (!t) throw badRequest("title is required", "VALIDATION_ERROR");
   const totalMinutes = Number.isFinite(est) && est > 0 ? clamp(est, 5, 12 * 60) : 60;
 
-  const settings = await getUserSettings(userId);
+  const [settings, user] = await Promise.all([getUserSettings(userId), findUserById(userId)]);
+  const languageName = LANGUAGE_NAMES[user?.language || "en"] || "English";
   const winStart = studyWindow?.start ?? settings?.study_window?.start ?? "18:00";
   const winEnd = studyWindow?.end ?? settings?.study_window?.end ?? "22:00";
 
@@ -275,6 +284,7 @@ export async function aiPlanTaskForUser(userId, { title, description, dueDate, e
   const instructions = [
     "You are an expert weekly planner for a student.",
     "Goal: schedule the task into the user's week based on availability, due date, and task complexity.",
+    `Write all human-readable JSON string fields such as label and notes in ${languageName}.`,
     "",
     "Rules:",
     "- Prefer using studyWindowFree times first; only use awakeFree if studyWindowFree is insufficient.",

@@ -1,5 +1,6 @@
 
 import { getProductivityStats } from "../repositories/stats.repo.js";
+import { findUserById } from "../repositories/users.repo.js";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 
@@ -43,13 +44,31 @@ async function openaiCreateResponse({ input, instructions }) {
   return await res.json();
 }
 
-function buildFallbackInsight(stats) {
+const LANGUAGE_NAMES = {
+  en: "English",
+  ru: "Russian",
+  ko: "Korean",
+  kk: "Kazakh",
+  uz: "Uzbek",
+};
+
+function buildFallbackInsight(stats, language = "en") {
   const total = Number(stats.taskSummary?.total || 0);
   const done = Number(stats.taskSummary?.done || 0);
   const overdue = Number(stats.taskSummary?.overdue || 0);
   const dueSoon = Number(stats.taskSummary?.due_next_7_days || 0);
   const avgOpen = Number(stats.taskSummary?.avg_open_task_minutes || 0);
   const topCourse = stats.topCourses?.[0];
+
+  if (language === "ru") {
+    const bits = [];
+    bits.push(`Вы выполнили ${done} из ${total} задач.`);
+    if (overdue > 0) bits.push(`${overdue} задач просрочено, поэтому сначала стоит разобрать старую работу.`);
+    if (dueSoon > 0) bits.push(`${dueSoon} открытых задач нужно выполнить в ближайшие 7 дней.`);
+    if (avgOpen > 0) bits.push(`Средняя оценка открытой задачи около ${avgOpen} минут.`);
+    if (topCourse?.open_tasks > 0) bits.push(`Самая большая нагрузка сейчас в курсе ${topCourse.name}: ${topCourse.open_tasks} открытых задач.`);
+    return bits.join(" ");
+  }
 
   const bits = [];
   bits.push(`You have completed ${done} of ${total} tasks so far.`);
@@ -60,12 +79,14 @@ function buildFallbackInsight(stats) {
   return bits.join(" ");
 }
 
-async function buildAiInsight(stats) {
-  if (!canUseAi()) return buildFallbackInsight(stats);
+async function buildAiInsight(stats, language = "en") {
+  if (!canUseAi()) return buildFallbackInsight(stats, language);
+  const languageName = LANGUAGE_NAMES[language] || "English";
 
   const instructions = [
     "You are an academic productivity analyst.",
     "Write one short paragraph (max 90 words).",
+    `Write the paragraph in ${languageName}.`,
     "Focus on useful insights, not generic motivation.",
     "Mention the most important trend, risk, and next best action.",
     "Do not use markdown bullets.",
@@ -80,13 +101,15 @@ async function buildAiInsight(stats) {
 
   try {
     const response = await openaiCreateResponse({ input, instructions });
-    return extractOutputText(response) || buildFallbackInsight(stats);
+    return extractOutputText(response) || buildFallbackInsight(stats, language);
   } catch {
-    return buildFallbackInsight(stats);
+    return buildFallbackInsight(stats, language);
   }
 }
 
 export async function getStatsForUser(userId) {
+  const user = await findUserById(userId);
+  const language = user?.language || "en";
   const stats = await getProductivityStats(userId);
 
   const total = Number(stats.taskSummary?.total || 0);
@@ -104,7 +127,7 @@ export async function getStatsForUser(userId) {
     scheduledActivityMinutesLast7Days: activityMinutes7d,
   };
 
-  const insight = await buildAiInsight({ ...stats, derived });
+  const insight = await buildAiInsight({ ...stats, derived }, language);
 
   return { ...stats, derived, insight };
 }

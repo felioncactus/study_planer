@@ -14,6 +14,7 @@ import {
   apiUploadTaskAttachments,
 } from "../api/tasks.api";
 import { apiListCourseNotes, apiCreateCourseNote } from "../api/notes.api";
+import { useLanguage } from "../context/LanguageContext";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -72,6 +73,7 @@ function Pill({ children, tone = "default" }) {
 }
 
 export default function CourseDetail() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -135,7 +137,7 @@ export default function CourseDetail() {
     if (!course) return {};
     const bg = course.banner_url ? `url(${course.banner_url})` : "none";
     return {
-      height: 160,
+      height: "clamp(250px, 26vw, 320px)",
       backgroundImage: bg,
       backgroundSize: "cover",
       backgroundPosition: "center",
@@ -449,14 +451,14 @@ export default function CourseDetail() {
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                         {course.day_of_week || course.start_time || course.end_time ? (
                           <Pill tone={course.banner_url ? "image" : "default"}>
-                            {course.day_of_week ? `${course.day_of_week} ` : ""}
+                            {course.day_of_week ? `${t(course.day_of_week)} ` : ""}
                             {formatTimeRange(course.start_time, course.end_time)}
                           </Pill>
                         ) : null}
-                        {course.begins_on ? <Pill tone={course.banner_url ? "image" : "default"}>Begins: {course.begins_on}</Pill> : null}
-                        {course.ends_on ? <Pill tone={course.banner_url ? "image" : "default"}>Ends: {course.ends_on}</Pill> : null}
-                        {course.midterm_date ? <Pill tone={course.banner_url ? "image" : "default"}>Midterm: {course.midterm_date}</Pill> : null}
-                        {course.final_date ? <Pill tone={course.banner_url ? "image" : "default"}>Final: {course.final_date}</Pill> : null}
+                        {course.begins_on ? <Pill tone={course.banner_url ? "image" : "default"}>{t("Begins")}: {course.begins_on}</Pill> : null}
+                        {course.ends_on ? <Pill tone={course.banner_url ? "image" : "default"}>{t("Ends")}: {course.ends_on}</Pill> : null}
+                        {course.midterm_date ? <Pill tone={course.banner_url ? "image" : "default"}>{t("Midterm")}: {course.midterm_date}</Pill> : null}
+                        {course.final_date ? <Pill tone={course.banner_url ? "image" : "default"}>{t("Final")}: {course.final_date}</Pill> : null}
                       </div>
                     </div>
                   </div>
@@ -774,9 +776,9 @@ export default function CourseDetail() {
 
               <div className="card">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <h3 style={{ marginTop: 0, marginBottom: 0 }}>Basic settings</h3>
+                  <h3 style={{ marginTop: 0, marginBottom: 0 }}>{t("Basic settings")}</h3>
                   <button onClick={onDeleteCourse} className="btn btn-danger">
-                    Delete course
+                    {t("Delete course")}
                   </button>
                 </div>
 
@@ -807,55 +809,59 @@ export default function CourseDetail() {
 
                   <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr 1fr" }}>
                     <label style={{ display: "grid", gap: 6 }}>
-                      Day
+                      {t("Day")}
                       <select value={dayOfWeek} onChange={(e) => setDayOfWeek(e.target.value)}>
                         <option value="">(optional)</option>
                         {DAYS.map((d) => (
                           <option key={d} value={d}>
-                            {d}
+                            {t(d)}
                           </option>
                         ))}
                       </select>
                     </label>
 
                     <label style={{ display: "grid", gap: 6 }}>
-                      Start time
+                      {t("Start time")}
                       <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
                     </label>
 
                     <label style={{ display: "grid", gap: 6 }}>
-                      End time
+                      {t("End time")}
                       <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                     </label>
                   </div>
 
                   <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
                     <label style={{ display: "grid", gap: 6 }}>
-                      Course begins
+                      {t("Course begins")}
                       <input type="date" value={beginsOn} onChange={(e) => setBeginsOn(e.target.value)} />
                     </label>
 
                     <label style={{ display: "grid", gap: 6 }}>
-                      Course ends
+                      {t("Course ends")}
                       <input type="date" min={beginsOn || undefined} value={endsOn} onChange={(e) => setEndsOn(e.target.value)} />
                     </label>
                   </div>
 
                   <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
                     <label style={{ display: "grid", gap: 6 }}>
-                      Midterm date
+                      {t("Midterm date")}
                       <input type="date" value={midtermDate} onChange={(e) => setMidtermDate(e.target.value)} />
                     </label>
 
                     <label style={{ display: "grid", gap: 6 }}>
-                      Final date
+                      {t("Final date")}
                       <input type="date" value={finalDate} onChange={(e) => setFinalDate(e.target.value)} />
                     </label>
                   </div>
 
                   <label style={{ display: "grid", gap: 6 }}>
-                    Course image
-                    <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                    {t("Course image")}
+                    <input id="course-image-file" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} style={{ display: "none" }} />
+                    <span className="row" style={{ gap: 10 }}>
+                      <label htmlFor="course-image-file" className="btn btn-ghost">{t("Choose file")}</label>
+                      <span className="small muted">{imageFile?.name || t("No file chosen")}</span>
+                    </span>
                   </label>
                   {(imagePreview || course.image_url) ? (
                     <div style={{ display: "grid", gap: 8 }}>
@@ -872,8 +878,12 @@ export default function CourseDetail() {
                   ) : null}
 
                   <label style={{ display: "grid", gap: 6 }}>
-                    Banner image
-                    <input type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} />
+                    {t("Banner image")}
+                    <input id="course-banner-file" type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files?.[0] || null)} style={{ display: "none" }} />
+                    <span className="row" style={{ gap: 10 }}>
+                      <label htmlFor="course-banner-file" className="btn btn-ghost">{t("Choose file")}</label>
+                      <span className="small muted">{bannerFile?.name || t("No file chosen")}</span>
+                    </span>
                   </label>
                   {(bannerPreview || course.banner_url) ? (
                     <div style={{ display: "grid", gap: 8 }}>

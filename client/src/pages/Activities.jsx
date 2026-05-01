@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import ActivityPlannerModal from "../components/ActivityPlannerModal";
 import { apiCreateActivity, apiDeleteActivity, apiListActivities, apiUpdateActivity } from "../api/activities.api";
 import { apiTaskSuggestions as taskSuggestionsApi } from "../api/tasks.api";
+import { useLanguage } from "../context/LanguageContext";
 
 function toLocalInputValue(d) {
   if (!d) return "";
@@ -31,6 +32,7 @@ function plusMinutes(localDateTime, minutes) {
 }
 
 export default function Activities() {
+  const { t } = useLanguage();
   const [activities, setActivities] = useState([]);
   const [title, setTitle] = useState("Gym session");
   const [description, setDescription] = useState("");
@@ -309,7 +311,7 @@ export default function Activities() {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div className="section-title">Your activities</div>
-              <div className="small muted">{activities.length} saved block{activities.length === 1 ? "" : "s"}</div>
+              <div className="small muted">{activities.length} {t(activities.length === 1 ? "saved block" : "saved blocks")}</div>
             </div>
             <div className="row">
               <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>Create</button>

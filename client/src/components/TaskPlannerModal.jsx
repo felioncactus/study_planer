@@ -1,6 +1,7 @@
-import RoundTimePicker from "./RoundTimePicker";
+﻿import RoundTimePicker from "./RoundTimePicker";
 import React, { useEffect, useMemo, useState } from "react";
 import { apiAiPlanTask } from "../api/tasks.api";
+import { useLanguage } from "../context/LanguageContext";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -38,8 +39,16 @@ function calendarVisibleRange(anchor) {
   return { gridStart, gridEnd };
 }
 
-function monthLabel(date) {
-  return date.toLocaleString(undefined, { month: "long", year: "numeric" });
+const LOCALE_BY_LANGUAGE = {
+  en: "en-US",
+  ru: "ru-RU",
+  ko: "ko-KR",
+  kk: "kk-KZ",
+  uz: "uz-UZ",
+};
+
+function monthLabel(date, language) {
+  return date.toLocaleString(LOCALE_BY_LANGUAGE[language] || undefined, { month: "long", year: "numeric" });
 }
 
 function timeLabel(iso) {
@@ -56,6 +65,7 @@ function levelClass(level) {
 }
 
 export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm, currentStudyWindow, onStudyWindowChange, loading, taskTitle, taskDescription, taskDueDate, taskEstimatedMinutes }) {
+  const { language, t } = useLanguage();
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedYmd, setSelectedYmd] = useState(() => toYmd(new Date()));
   const [picked, setPicked] = useState(null); // { start, end } or { blocks: [...] }
@@ -98,11 +108,11 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
 
   const PRESETS = useMemo(
     () => [
-      { id: "evening", label: "Evening (18:00–22:00)", win: { start: "18:00", end: "22:00" } },
-      { id: "morning", label: "Morning (06:00–10:00)", win: { start: "06:00", end: "10:00" } },
-      { id: "afternoon", label: "Afternoon (12:00–18:00)", win: { start: "12:00", end: "18:00" } },
-      { id: "day", label: "Day (08:00–22:00)", win: { start: "08:00", end: "22:00" } },
-      { id: "custom", label: "Custom…", win: null },
+      { id: "evening", label: "Evening (18:00â€“22:00)", win: { start: "18:00", end: "22:00" } },
+      { id: "morning", label: "Morning (06:00â€“10:00)", win: { start: "06:00", end: "10:00" } },
+      { id: "afternoon", label: "Afternoon (12:00â€“18:00)", win: { start: "12:00", end: "18:00" } },
+      { id: "day", label: "Day (08:00â€“22:00)", win: { start: "08:00", end: "22:00" } },
+      { id: "custom", label: "Customâ€¦", win: null },
     ],
     []
   );
@@ -163,13 +173,13 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
       <div className="modal-card planner-modal-card">
         <div className="row planner-modal-header" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div className="planner-modal-title-block">
-            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>Plan this task</div>
+            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>{t("Plan this task")}</div>
             <div className="small muted">
-              Green = fits in one session • Red = too busy
+              {t("Green = fits in one session • Red = too busy")}
             </div>
             <div className="row planner-window-row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
               <label className="small muted" style={{ minWidth: 90 }}>
-                Planning window
+                {t("Planning window")}
               </label>
               <select
                 value={windowPreset}
@@ -193,7 +203,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
               {windowPreset === "custom" ? (
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <RoundTimePicker value={customStart} onChange={setCustomStart} disabled={!!loading} />
-                  <span className="small muted">to</span>
+                  <span className="small muted">{t("to")}</span>
                   <RoundTimePicker value={customEnd} onChange={setCustomEnd} disabled={!!loading} />
                   <button
                     className="btn btn-ghost"
@@ -201,19 +211,19 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                     disabled={!!loading}
                     title="Recalculate suggestions for this window"
                   >
-                    Apply
+                    {t("Apply")}
                   </button>
                 </div>
               ) : (
                 <div className="small muted">
-                  Study window: {(currentStudyWindow?.start ?? suggestions?.studyWindow?.start)}–{(currentStudyWindow?.end ?? suggestions?.studyWindow?.end)}
+                  {t("Study window")}: {(currentStudyWindow?.start ?? suggestions?.studyWindow?.start)}-{(currentStudyWindow?.end ?? suggestions?.studyWindow?.end)}
                 </div>
               )}
             </div>
 
           </div>
           <button className="btn btn-ghost planner-close-btn" onClick={onClose}>
-            ✕
+            âœ•
           </button>
         </div>
 
@@ -221,18 +231,18 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
           <div className="planner-calendar">
             <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
               <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1))}>
-                ←
+                â†
               </button>
-              <div style={{ fontWeight: 700 }}>{monthLabel(anchor)}</div>
+              <div style={{ fontWeight: 700 }}>{monthLabel(anchor, language)}</div>
               <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1))}>
-                →
+                â†’
               </button>
             </div>
 
             <div className="planner-weekdays">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((w) => (
                 <div key={w} className="small muted" style={{ textAlign: "center" }}>
-                  {w}
+                  {t(w)}
                 </div>
               ))}
             </div>
@@ -270,15 +280,15 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
 
           <div className="planner-mobile-slot-launch">
             <button type="button" className="btn btn-primary" onClick={() => setMobileSlotsOpen(true)}>
-              Best time windows and AI
+              {t("Best time windows and AI")}
             </button>
-            {picked ? <div className="small muted">A time plan is selected. Open to review or change it.</div> : null}
+            {picked ? <div className="small muted">{t("A time plan is selected. Open to review or change it.")}</div> : null}
           </div>
 
           <div className={`planner-slots${mobileSlotsOpen ? " is-mobile-open" : ""}`}>
             <div className="planner-mobile-sheet-head">
               <div>
-                <div style={{ fontWeight: 750 }}>Best time windows</div>
+                <div style={{ fontWeight: 750 }}>{t("Best time windows")}</div>
                 <div className="small muted">{selectedYmd}</div>
               </div>
               <button type="button" className="btn btn-ghost" onClick={() => setMobileSlotsOpen(false)} aria-label="Close time windows">
@@ -286,7 +296,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
               </button>
             </div>
             <div className="planner-slots-title" style={{ fontWeight: 750, marginBottom: 6 }}>
-              {selectedYmd} • Best time windows
+              {selectedYmd} • {t("Best time windows")}
             </div>
             {selectedInfo?.slots?.length ? (
               <div style={{ display: "grid", gap: 8 }}>
@@ -305,7 +315,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                       style={{ justifyContent: "space-between" }}
                     >
                       <span>
-                        {timeLabel(s.start)}–{timeLabel(s.end)}
+                        {timeLabel(s.start)}â€“{timeLabel(s.end)}
                       </span>
                       <span className="small muted">{s.freeMinutes}m</span>
                     </button>
@@ -313,15 +323,15 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                 })}
               </div>
             ) : (
-              <div className="small muted">No free time inside your study window.</div>
+              <div className="small muted">{t("No free time inside your study window.")}</div>
             )}
 
 
             <div className="card" style={{ marginTop: 14, padding: 12 }}>
               <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>AI week rearrange</div>
-                  <div className="small muted">If it looks like there is no good time, ask AI to fit it into your week (or split it into parts).</div>
+                  <div style={{ fontWeight: 700 }}>{t("AI week rearrange")}</div>
+                  <div className="small muted">{t("If it looks like there is no good time, ask AI to fit it into your week (or split it into parts).")}</div>
                 </div>
                 <button
                   type="button"
@@ -330,7 +340,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                   disabled={aiLoading || !taskTitle}
                   title="Ask AI to pick the best time (or split into parts)"
                 >
-                  {aiLoading ? "Planning..." : "AI arrange week"}
+                  {aiLoading ? t("Planning...") : t("AI arrange week")}
                 </button>
               </div>
 
@@ -339,7 +349,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
               {aiPlan ? (
                 <div className="planner-ai-plan">
                   <div className="small planner-ai-summary">
-                    <b>Plan:</b> {aiPlan.mode === "split" ? "Split into parts" : "Single block"} • Total {aiPlan.totalMinutes} min
+                    <b>Plan:</b> {aiPlan.mode === "split" ? "Split into parts" : "Single block"} â€¢ Total {aiPlan.totalMinutes} min
                   </div>
 
                   <div className="planner-ai-blocks">
@@ -347,7 +357,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                       <div key={i} className="small planner-ai-block">
                         <span>{b.label || taskTitle}</span>
                         <span className="planner-ai-time">
-                          {String(b.start).replace("T", " ").slice(0, 16)} → {String(b.end).replace("T", " ").slice(0, 16)} ({b.minutes}m)
+                          {String(b.start).replace("T", " ").slice(0, 16)} â†’ {String(b.end).replace("T", " ").slice(0, 16)} ({b.minutes}m)
                         </span>
                       </div>
                     ))}
@@ -368,7 +378,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                         }
                       }}
                     >
-                      Use this plan
+                      {t("Use this plan")}
                     </button>
                   </div>
                 </div>
@@ -377,7 +387,7 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
 
             <div className="row planner-modal-footer" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
               <button className="btn btn-ghost" onClick={onClose}>
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 className="btn"
@@ -385,14 +395,14 @@ export default function TaskPlannerModal({ open, onClose, suggestions, onConfirm
                 onClick={() => onConfirm(picked)}
                 title={!picked ? "Pick a time window first" : "Create task with planned time"}
               >
-                Create task
+                {t("Create task")}
               </button>
             </div>
           </div>
         </div>
 
         <div className="small muted" style={{ marginTop: 10 }}>
-          Tip: picked time creates a calendar block. You can still change task status later.
+          {t("Tip: picked time creates a calendar block. You can still change task status later.")}
         </div>
       </div>
     </div>

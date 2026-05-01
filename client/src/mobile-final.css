@@ -1,0 +1,1022 @@
+/* Final mobile fixes loaded after App.css. */
+@media (max-width: 980px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    overscroll-behavior-x: none;
+  }
+
+  .navbar-wrap,
+  .navbar-wrap .container,
+  .dashboard-shell.container,
+  .daily-shell,
+  .container {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .dashboard-shell.container {
+    width: min(100%, 640px) !important;
+    max-width: min(100%, 640px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+    padding-bottom: calc(152px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-shell > * {
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .page-header {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-shell .page-header > .row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-shell .page-header > .row .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding-inline: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-stat-grid.grid-12 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-stat-grid.grid-12 > .dashboard-stat-card,
+  .dashboard-stat-grid.grid-12 > .dashboard-stat-card.col-3,
+  .dashboard-stat-grid.grid-12 > a.dashboard-stat-card {
+    grid-column: auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 136px !important;
+    aspect-ratio: auto !important;
+    padding: 14px !important;
+    display: grid !important;
+    align-content: space-between !important;
+  }
+
+  .dashboard-stat-card .stat-top {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-stat-card .kpi {
+    display: inline-flex !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-tabbar {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(34px + env(safe-area-inset-bottom)) !important;
+    width: min(560px, calc(100% - 48px)) !important;
+    max-width: min(560px, calc(100% - 48px)) !important;
+    transform: translateX(-50%) !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    box-sizing: border-box !important;
+    z-index: 999 !important;
+  }
+
+  .chat-mobile-actions-sheet.is-open {
+    bottom: calc(118px + env(safe-area-inset-bottom)) !important;
+    max-height: min(68dvh, 560px) !important;
+    border-radius: 28px !important;
+  }
+
+  .chat-mobile-actions-grid {
+    padding-bottom: 8px !important;
+  }
+
+  .mobile-tab-link {
+    min-width: 0 !important;
+    min-height: 52px !important;
+    padding: 6px 2px !important;
+  }
+
+  .daily-timetable-head {
+    left: 12px !important;
+    right: 12px !important;
+    top: 7vh !important;
+    bottom: auto !important;
+    width: auto !important;
+    min-height: 124px !important;
+    transform: none !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+
+  .daily-shell.is-timetable-open > .daily-mobile-timeline {
+    left: 12px !important;
+    right: 12px !important;
+    top: calc(7vh + 124px) !important;
+    bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+    border-radius: 0 0 24px 24px !important;
+    border-top: 0 !important;
+  }
+
+  .chat-page-shell.container {
+    width: min(100%, 640px) !important;
+    max-width: min(100%, 640px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) {
+    padding-bottom: calc(152px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar,
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar-title-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 12px !important;
+    align-items: center !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar-title-actions {
+    min-width: 0 !important;
+    justify-self: end !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar-count {
+    display: none !important;
+  }
+
+  .chat-page-shell:not(.has-chat-open) .chat-sidebar-mobile-trigger {
+    max-width: 132px !important;
+    min-width: 112px !important;
+    padding-inline: 12px !important;
+    justify-content: center !important;
+  }
+
+  body.chat-page-active:has(.chat-page-shell.has-chat-open) {
+    height: calc(var(--app-vh, 1vh) * 100) !important;
+    overflow: hidden !important;
+  }
+
+  .chat-page-shell.has-chat-open {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc((var(--app-vh, 1vh) * 100) - 104px) !important;
+    max-height: calc((var(--app-vh, 1vh) * 100) - 104px) !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.chat-page-active:has(.chat-page-shell.has-chat-open) .mobile-tabbar {
+    display: none !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-stage-card {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) 112px !important;
+    padding-bottom: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-message-stream {
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer {
+    position: relative !important;
+    bottom: auto !important;
+    min-height: 112px !important;
+    display: grid !important;
+    align-items: center !important;
+    padding: 14px 12px 18px !important;
+    border-top: 1px solid var(--border) !important;
+    background: var(--bg-elevated) !important;
+    overflow: visible !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-main {
+    display: grid !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-mobile-compose-row {
+    display: grid !important;
+    grid-template-columns: 42px 42px minmax(0, 1fr) 52px !important;
+    gap: 7px !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-mobile-composer-plus,
+  .chat-page-shell.has-chat-open .chat-mobile-image-btn,
+  .chat-page-shell.has-chat-open .chat-send-icon-btn {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-send-icon-btn {
+    width: 52px !important;
+    min-width: 52px !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-field,
+  .chat-page-shell.has-chat-open .chat-compose-shell,
+  .chat-page-shell.has-chat-open .chat-compose-textarea {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-compose-textarea {
+    min-height: 64px !important;
+    height: 64px !important;
+    max-height: 132px !important;
+    padding: 16px 14px !important;
+    line-height: 1.3 !important;
+    border-radius: 18px !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-footer {
+    margin: 0 !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(124px + env(safe-area-inset-bottom)) !important;
+    z-index: 2400 !important;
+    width: min(560px, calc(100vw - 28px)) !important;
+    max-height: min(46dvh, 420px) !important;
+    display: grid !important;
+    gap: 10px !important;
+    transform: translateX(-50%) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    padding: 14px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+    box-shadow: 0 18px 58px rgba(15, 23, 42, 0.24) !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-composer-status {
+    display: grid !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-inline-menu-trigger,
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-special-menu-trigger,
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-attach-btn,
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-composer-submit .btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: flex-start !important;
+    border-radius: 16px !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-composer-footer.is-open .chat-composer-submit {
+    display: grid !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+}
+
+/* Create group dialog polish */
+.chat-action-dialog-backdrop {
+  background: rgba(15, 23, 42, 0.58) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Group tools / poll composer must scroll inside its own panel. */
+.chat-special-menu-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 3000 !important;
+  display: grid !important;
+  align-items: start !important;
+  justify-items: center !important;
+  padding: clamp(20px, 4dvh, 44px) 16px 24px !important;
+  background: rgba(15, 23, 42, 0.36) !important;
+  backdrop-filter: blur(8px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+.chat-special-menu-panel.is-open {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  z-index: 3010 !important;
+  width: min(720px, calc(100vw - 48px)) !important;
+  max-height: calc(100dvh - clamp(56px, 10dvh, 92px)) !important;
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+  transform: none !important;
+  padding: 18px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 24px !important;
+  background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.32) !important;
+  color: var(--fg) !important;
+}
+
+.chat-special-menu-panel.is-open::before {
+  display: none !important;
+  content: none !important;
+}
+
+.chat-special-menu-header {
+  position: sticky !important;
+  top: -18px !important;
+  z-index: 2 !important;
+  margin: -18px -18px 0 !important;
+  padding: 18px !important;
+  background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.chat-special-menu-tabs,
+.chat-action-form,
+.chat-action-options {
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+.chat-action-options {
+  background: color-mix(in srgb, var(--surface-soft) 80%, var(--bg-elevated)) !important;
+}
+
+.chat-special-menu-panel .input,
+.chat-special-menu-panel .btn,
+.chat-special-menu-panel .icon-btn {
+  opacity: 1 !important;
+}
+
+.chat-action-form {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding-right: 2px !important;
+}
+
+.chat-action-options {
+  min-height: 0 !important;
+}
+
+.chat-action-option-list {
+  max-height: min(22dvh, 210px) !important;
+  overflow-y: auto !important;
+  padding-right: 2px !important;
+  overscroll-behavior: contain !important;
+}
+
+.chat-action-submit {
+  position: static !important;
+  min-height: 54px !important;
+  margin: 4px 0 0 !important;
+  border-radius: 16px !important;
+}
+
+@media (max-width: 680px) {
+  .chat-special-menu-backdrop {
+    align-items: start !important;
+    padding: calc(12px + env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-special-menu-panel.is-open {
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: min(100%, 560px) !important;
+    max-height: calc(100dvh - 30px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    border-radius: 24px !important;
+    transform: none !important;
+    padding: 16px !important;
+  }
+
+  .chat-special-menu-header {
+    top: -16px !important;
+    margin: -16px -16px 0 !important;
+    padding: 16px !important;
+  }
+
+  .chat-special-menu-tabs {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .chat-special-menu-tab {
+    justify-content: center !important;
+  }
+
+  .chat-action-option-row {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) 44px !important;
+  }
+
+  .chat-action-options-head {
+    align-items: start !important;
+    gap: 8px !important;
+  }
+
+  .chat-action-option-list {
+    max-height: min(30dvh, 260px) !important;
+  }
+
+  .chat-action-submit {
+    bottom: auto !important;
+    margin: 8px 0 0 !important;
+  }
+}
+
+.chat-action-dialog {
+  width: min(760px, calc(100% - 28px)) !important;
+  max-height: min(86dvh, 760px) !important;
+  border-radius: 26px !important;
+  padding: 22px !important;
+  overflow: auto !important;
+}
+
+.chat-action-dialog > .page-header {
+  align-items: flex-start !important;
+  margin-bottom: 16px !important;
+}
+
+.chat-action-dialog > .page-header h3 {
+  font-size: clamp(1.8rem, 4vw, 2.35rem) !important;
+  line-height: 1 !important;
+}
+
+.chat-action-dialog > .page-header .btn {
+  min-height: 52px !important;
+  border-radius: 20px !important;
+  padding-inline: 18px !important;
+}
+
+.chat-group-create-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 24px !important;
+  padding: 22px !important;
+  background:
+    radial-gradient(360px 180px at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    color-mix(in srgb, var(--card-2) 96%, transparent) !important;
+}
+
+.chat-group-create-head {
+  align-items: start !important;
+  margin-bottom: 16px !important;
+}
+
+.chat-group-create-head h3 {
+  font-size: 1.55rem !important;
+  margin: 0 !important;
+}
+
+.chat-group-name-input {
+  min-height: 58px !important;
+  border-radius: 20px !important;
+  font-size: 1.05rem !important;
+}
+
+.chat-group-picker-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chat-member-picker {
+  display: grid !important;
+  gap: 10px !important;
+  max-height: 280px !important;
+  overflow: auto !important;
+  padding: 4px !important;
+}
+
+.chat-group-member-option {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 72px !important;
+  padding: 12px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 18px !important;
+  background: color-mix(in srgb, var(--surface-soft) 78%, transparent) !important;
+  cursor: pointer !important;
+}
+
+.chat-group-member-option input {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.chat-group-member-copy {
+  display: grid;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.chat-group-check {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: transparent;
+  background: var(--card);
+}
+
+.chat-group-member-option.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
+  background: color-mix(in srgb, var(--accent) 14%, var(--card)) !important;
+}
+
+.chat-group-member-option.is-selected .chat-group-check {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: var(--accent);
+}
+
+.chat-group-create-card .btn-primary {
+  min-height: 58px !important;
+  border-radius: 20px !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+}
+
+@media (max-width: 680px) {
+  .chat-action-dialog-backdrop {
+    display: grid !important;
+    align-items: center !important;
+    justify-items: center !important;
+    padding: 16px 12px calc(118px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .chat-action-dialog {
+    width: min(100%, 560px) !important;
+    max-height: min(72dvh, 640px) !important;
+    border-radius: 28px !important;
+    padding: 14px !important;
+    margin: 0 auto !important;
+  }
+
+  .chat-action-dialog > .page-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    align-items: center !important;
+    position: sticky !important;
+    top: -16px !important;
+    z-index: 2 !important;
+    margin: -16px -16px 12px !important;
+    padding: 16px !important;
+    background: color-mix(in srgb, var(--bg-elevated) 98%, transparent) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  .chat-action-dialog > .page-header h3 {
+    font-size: 1.65rem !important;
+  }
+
+  .chat-action-dialog > .page-header .btn {
+    min-width: 46px !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 17px !important;
+    justify-content: center !important;
+  }
+
+  .chat-action-dialog > .page-header .btn svg {
+    margin: 0 !important;
+  }
+
+  .chat-action-dialog > .page-header .btn {
+    font-size: 0 !important;
+  }
+
+  .chat-group-create-card {
+    padding: 14px !important;
+    border-radius: 22px !important;
+  }
+
+  .chat-group-create-head {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .chat-group-create-head h3 {
+    font-size: 1.45rem !important;
+  }
+
+  .chat-group-create-head p {
+    line-height: 1.35 !important;
+  }
+
+  .chat-group-name-input {
+    min-height: 52px !important;
+    border-radius: 18px !important;
+  }
+
+  .chat-member-picker {
+    max-height: min(22dvh, 190px) !important;
+  }
+
+  .chat-group-member-option {
+    min-height: 62px !important;
+  }
+
+  .chat-group-create-card .btn-primary {
+    min-height: 52px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .chat-page-shell.has-chat-open .chat-mobile-compose-row {
+    grid-template-columns: 42px minmax(0, 1fr) 52px !important;
+  }
+
+  .chat-page-shell.has-chat-open .chat-mobile-image-btn {
+    display: none !important;
+  }
+}
+
+/* Mobile course notes editor */
+.note-editor-mobile-assistant-button,
+.note-editor-mobile-actions-toggle,
+.note-editor-mobile-format-toggle,
+.note-editor-sidebar-close,
+.note-editor-assistant-backdrop {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .note-editor-shell {
+    width: min(100%, 640px) !important;
+    margin: 0 auto !important;
+    padding: 8px 12px calc(96px + env(safe-area-inset-bottom)) !important;
+    overflow-x: hidden !important;
+  }
+
+  .note-editor-topbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+    position: relative !important;
+  }
+
+  .note-editor-backlink {
+    margin-bottom: 0 !important;
+    font-weight: 800 !important;
+  }
+
+  .note-editor-backlink a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    padding: 0 14px !important;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)) !important;
+    border-radius: 16px !important;
+    color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated)) !important;
+    text-decoration: none !important;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .note-editor-meta {
+    display: none !important;
+  }
+
+  .note-editor-actions {
+    position: relative !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .note-editor-actions button {
+    min-width: 0 !important;
+    min-height: 44px !important;
+    padding: 0 10px !important;
+    border-radius: 15px !important;
+    font-weight: 800 !important;
+  }
+
+  .note-editor-mobile-actions-toggle {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 54px !important;
+    min-width: 54px !important;
+    height: 54px !important;
+    min-height: 54px !important;
+    padding: 0 !important;
+    border-radius: 18px !important;
+    color: #fff !important;
+    background: var(--accent) !important;
+    border-color: color-mix(in srgb, var(--accent) 80%, transparent) !important;
+    font-size: 2rem !important;
+    line-height: 1 !important;
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--accent) 28%, transparent) !important;
+  }
+
+  .note-editor-actions > button:not(.note-editor-mobile-actions-toggle) {
+    display: none !important;
+  }
+
+  .note-editor-actions.is-open {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    z-index: 80 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-items: stretch !important;
+    gap: 10px !important;
+    width: min(330px, calc(100vw - 24px)) !important;
+    padding: 12px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 22px !important;
+    background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22) !important;
+  }
+
+  .note-editor-actions.is-open > button:not(.note-editor-mobile-actions-toggle) {
+    display: inline-flex !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    justify-content: center !important;
+    color: var(--fg) !important;
+    background: color-mix(in srgb, var(--surface-soft) 88%, var(--bg-elevated)) !important;
+    border-color: var(--border) !important;
+    box-shadow: none !important;
+    font-size: 0.98rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .note-editor-actions.is-open .note-editor-mobile-actions-toggle {
+    justify-self: end !important;
+    grid-column: 2 !important;
+  }
+
+  .note-editor-mobile-assistant-button {
+    align-items: center !important;
+    justify-content: center !important;
+    grid-column: 1 / -1 !important;
+    color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated)) !important;
+    border-color: color-mix(in srgb, var(--accent) 80%, transparent) !important;
+  }
+
+  .note-editor-actions.is-open > button:last-child {
+    grid-column: 1 / -1 !important;
+    width: min(240px, 100%) !important;
+    justify-self: center !important;
+    color: #b91c1c !important;
+    background: color-mix(in srgb, #ef4444 8%, var(--bg-elevated)) !important;
+    border-color: color-mix(in srgb, #ef4444 26%, var(--border)) !important;
+  }
+
+  .note-editor-layout {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .note-editor-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+    margin-top: 0 !important;
+  }
+
+  .note-editor-toolbar-wrap {
+    padding: 14px !important;
+    gap: 12px !important;
+    position: relative !important;
+  }
+
+  .note-editor-title-input {
+    font-size: clamp(1.55rem, 8vw, 2rem) !important;
+    line-height: 1.1 !important;
+  }
+
+  .note-editor-mobile-format-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 16px !important;
+    font-weight: 800 !important;
+    color: var(--fg) !important;
+    background: color-mix(in srgb, var(--surface-soft) 86%, transparent) !important;
+  }
+
+  .note-editor-toolbar {
+    display: none !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 18px !important;
+    background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14) !important;
+  }
+
+  .note-editor-toolbar.is-open {
+    display: grid !important;
+  }
+
+  .note-editor-toolbar-button {
+    min-height: 42px !important;
+    padding: 0 8px !important;
+    border-radius: 14px !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+  }
+
+  .note-editor-suggestion {
+    margin: 12px !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .note-editor-suggestion-body {
+    max-height: 36dvh !important;
+    padding: 12px !important;
+  }
+
+  .note-editor-suggestion-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .note-editor-suggestion-actions button {
+    min-height: 44px !important;
+    border-radius: 14px !important;
+  }
+
+  .note-editor-canvas {
+    min-height: 58dvh !important;
+    padding: 18px !important;
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .note-editor-assistant-backdrop {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 3000 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: rgba(15, 23, 42, 0.42) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .note-editor-sidebar {
+    display: none !important;
+  }
+
+  .note-editor-sidebar.is-open {
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    position: fixed !important;
+    left: 50% !important;
+    top: calc(14px + env(safe-area-inset-top)) !important;
+    z-index: 3010 !important;
+    width: min(560px, calc(100vw - 24px)) !important;
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    transform: translateX(-50%) !important;
+    overflow: hidden !important;
+    padding: 16px !important;
+    border-radius: 24px !important;
+    background: color-mix(in srgb, var(--bg-elevated) 98%, white 2%) !important;
+    box-shadow: 0 26px 80px rgba(15, 23, 42, 0.32) !important;
+  }
+
+  .note-editor-sidebar-head {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    gap: 10px !important;
+    align-items: center !important;
+    margin: -16px -16px 12px !important;
+    padding: 16px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: inherit !important;
+  }
+
+  .note-editor-sidebar-close {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border-radius: 16px !important;
+    font-size: 1rem !important;
+  }
+
+  .note-editor-chat-list {
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    margin: 0 !important;
+    padding-right: 2px !important;
+  }
+
+  .note-editor-chat-form {
+    margin-top: 12px !important;
+  }
+
+  .note-editor-chat-input {
+    min-height: 92px !important;
+    max-height: 30dvh !important;
+    border-radius: 16px !important;
+  }
+
+  .note-editor-chat-form button[type="submit"] {
+    min-height: 48px !important;
+    border-radius: 16px !important;
+    font-weight: 800 !important;
+    color: #fff !important;
+    background: var(--accent) !important;
+  }
+}

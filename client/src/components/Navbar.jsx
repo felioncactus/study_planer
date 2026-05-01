@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import ChatWidget from "./ChatWidget";
@@ -107,7 +107,7 @@ export default function Navbar() {
   );
 
   function toggleAssistant() {
-    window.dispatchEvent(new CustomEvent("kepka:toggle-assistant"));
+    window.dispatchEvent(new CustomEvent("planёrka:toggle-assistant"));
     setMoreOpen(false);
   }
 
@@ -149,13 +149,15 @@ export default function Navbar() {
       <header className="navbar-wrap">
         <div className="container">
           <div className="navbar">
-            <div className="navbar-brand" aria-label="Kepka home">
-              <div className="navbar-mark" aria-hidden="true">K</div>
+            <Link to="/dashboard" className="navbar-brand" aria-label="Go to dashboard">
+              <div className="navbar-mark" aria-hidden="true">
+                <img src="/planorka-logo.png" alt="" className="navbar-logo-img" />
+              </div>
               <div className="navbar-brand-copy">
-                <span className="navbar-brand-title">Kepka</span>
+                <span className="navbar-brand-title">PLANЁRKA</span>
                 <span className="small muted">Student workspace</span>
               </div>
-            </div>
+            </Link>
 
             <button
               type="button"

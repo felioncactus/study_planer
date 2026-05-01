@@ -3,14 +3,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { apiDeleteCourse, apiListCourses } from "../api/courses.api";
+import { useLanguage } from "../context/LanguageContext";
 
 function fmtTime(t) {
   return t ? String(t).slice(0, 5) : "";
 }
 
-function metaForCourse(course) {
+function metaForCourse(course, t) {
   const parts = [];
-  if (course.day_of_week) parts.push(course.day_of_week);
+  if (course.day_of_week) parts.push(t(course.day_of_week));
   if (course.start_time || course.end_time) {
     const start = fmtTime(course.start_time);
     const end = fmtTime(course.end_time);
@@ -19,12 +20,13 @@ function metaForCourse(course) {
   if (course.begins_on || course.ends_on) {
     parts.push(`Runs ${course.begins_on || "?"} → ${course.ends_on || "?"}`);
   }
-  if (course.midterm_date) parts.push(`Midterm ${course.midterm_date}`);
-  if (course.final_date) parts.push(`Final ${course.final_date}`);
-  return parts;
+  if (course.midterm_date) parts.push(`${t("Midterm")} ${course.midterm_date}`);
+  if (course.final_date) parts.push(`${t("Final")} ${course.final_date}`);
+  return parts.map((part) => part.replace(/^Runs /, `${t("Runs")} `));
 }
 
 export default function Courses() {
+  const { t } = useLanguage();
   const [courses, setCourses] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -111,9 +113,9 @@ export default function Courses() {
                     {highlighted.description || "Add a summary, meeting time, and course art to make this page feel alive and personal."}
                   </div>
 
-                  {metaForCourse(highlighted).length ? (
+                  {metaForCourse(highlighted, t).length ? (
                     <div className="course-meta-wrap">
-                      {metaForCourse(highlighted).map((item) => (
+                      {metaForCourse(highlighted, t).map((item) => (
                         <span key={item} className="course-chip">{item}</span>
                       ))}
                     </div>
@@ -129,7 +131,7 @@ export default function Courses() {
 
             <section className="course-grid">
               {rest.map((course) => {
-                const metaParts = metaForCourse(course);
+                const metaParts = metaForCourse(course, t);
                 const courseInitial = course.name?.slice(0, 1)?.toUpperCase() || "C";
                 return (
                   <article key={course.id} className="course-card card lift">

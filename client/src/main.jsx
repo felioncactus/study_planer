@@ -8,6 +8,7 @@ import { NotificationsProvider } from "./context/NotificationsContext.jsx";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import "./index.css";
 import "./App.css";
+import "./mobile-final.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

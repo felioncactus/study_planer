@@ -5,6 +5,7 @@ import { fetchFriendNotifications, openNotificationsStream } from "../api/notifi
 import { fetchChats } from "../api/chats.api";
 import { apiListCalendarEvents } from "../api/calendar.api";
 import { useAuth } from "./AuthContext";
+import { useLanguage } from "./LanguageContext";
 
 const NotificationsContext = createContext(null);
 
@@ -31,26 +32,26 @@ function toastKeyForEvent(event) {
   return `event:${event.id}:${String(event.start)}`;
 }
 
-function mapUpcomingEventToToast(event) {
+function mapUpcomingEventToToast(event, t = (value) => value) {
   const kind =
     event?.meta?.blockType === "activity"
-      ? "Activity"
+      ? t("Activity")
       : event?.meta?.blockType === "task"
-        ? "Planned task"
+        ? t("Planned task")
         : event.type === "course"
-          ? "Course"
-          : "Task";
-  const when = event.allDay ? "today" : `at ${timeLabel(event.start)}`;
+          ? t("Course")
+          : t("Task");
+  const when = event.allDay ? t("today") : `${t("at")} ${timeLabel(event.start)}`;
   return {
     id: toastKeyForEvent(event),
-    title: `${kind} coming up`,
+    title: `${kind} ${t("coming up")}`,
     message: `${event.title} ${when}`.trim(),
     tone: event?.meta?.blockType === "activity" ? "info" : "accent",
     sticky: false,
   };
 }
 
-function mapUnreadChatsToToasts(chats, previousCounts, suppressedChatIds = new Set()) {
+function mapUnreadChatsToToasts(chats, previousCounts, suppressedChatIds = new Set(), t = (value) => value) {
   const items = [];
   for (const chat of chats || []) {
     const chatKey = String(chat.id);
@@ -60,11 +61,11 @@ function mapUnreadChatsToToasts(chats, previousCounts, suppressedChatIds = new S
     if (unread > previous) {
       items.push({
         id: `chat:${chat.id}:${unread}`,
-        title: "New message",
-        message: chat.title || "You received a new message",
+        title: t("New message"),
+        message: chat.title || t("You received a new message"),
         tone: "accent",
         sticky: true,
-        actionLabel: "Reply",
+        actionLabel: t("Reply"),
         actionHref: `/conversations/${chat.id}`,
       });
     }
@@ -74,6 +75,7 @@ function mapUnreadChatsToToasts(chats, previousCounts, suppressedChatIds = new S
 
 export function NotificationsProvider({ children }) {
   const { token } = useAuth();
+  const { t } = useLanguage();
   const [badge, setBadge] = useState(0);
   const [toasts, setToasts] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -137,7 +139,7 @@ export function NotificationsProvider({ children }) {
         .filter((id) => id !== null && id !== undefined && id !== "")
         .map((id) => String(id))
     );
-    for (const toast of mapUnreadChatsToToasts(chats, unreadByChatRef.current, suppressedChatIds)) {
+    for (const toast of mapUnreadChatsToToasts(chats, unreadByChatRef.current, suppressedChatIds, t)) {
       pushToast(toast);
     }
     unreadByChatRef.current = new Map(chats.map((chat) => [String(chat.id), Number(chat.unread_count || 0)]));
@@ -156,12 +158,12 @@ export function NotificationsProvider({ children }) {
       const key = toastKeyForEvent(event);
       if (reminderTimersRef.current.has(key)) continue;
       const timer = window.setTimeout(() => {
-        pushToast(mapUpcomingEventToToast(event));
+        pushToast(mapUpcomingEventToToast(event, t));
         reminderTimersRef.current.delete(key);
       }, delay);
       reminderTimersRef.current.set(key, timer);
     }
-  }, [activeChatId, pushToast]);
+  }, [activeChatId, pushToast, t]);
 
   useEffect(() => {
     if (!token) {
@@ -192,11 +194,11 @@ export function NotificationsProvider({ children }) {
           if (event === "chat.timer.finished") {
             pushToast({
               id: `chat-timer:${data?.messageId}:${data?.endsAt}`,
-              title: "Group timer finished",
-              message: data?.title || "A chat timer has ended",
+              title: t("Group timer finished"),
+              message: data?.title || t("A chat timer has ended"),
               tone: "accent",
               sticky: true,
-              actionLabel: "Open chat",
+              actionLabel: t("Open chat"),
               actionHref: `/conversations/${data?.chatId}`,
             });
             return;
@@ -215,11 +217,11 @@ export function NotificationsProvider({ children }) {
             if (data?.incoming && !isActiveChat) {
               pushToast({
                 id: `live-chat:${incomingChatId}:${data.messageId}`,
-                title: data?.senderName ? `New message from ${data.senderName}` : "New message",
-                message: data?.preview || data?.title || "You received a new message",
+                title: data?.senderName ? `${t("New message from")} ${data.senderName}` : t("New message"),
+                message: data?.preview || data?.title || t("You received a new message"),
                 tone: "accent",
                 sticky: true,
-                actionLabel: "Reply",
+                actionLabel: t("Reply"),
                 actionHref: `/conversations/${incomingChatId}`,
               });
             }
@@ -245,7 +247,7 @@ export function NotificationsProvider({ children }) {
       if (pollTimer) window.clearInterval(pollTimer);
       if (reconnectTimer) window.clearTimeout(reconnectTimer);
     };
-  }, [activeChatId, emitRealtimeEvent, pushToast, refreshSnapshot, token]);
+  }, [activeChatId, emitRealtimeEvent, pushToast, refreshSnapshot, t, token]);
 
   useEffect(() => {
     const timers = [];
@@ -272,6 +274,8 @@ export function NotificationsProvider({ children }) {
 }
 
 function NotificationViewport({ toasts, onClose }) {
+  const { t } = useLanguage();
+
   if (!toasts.length) return null;
 
   return (
@@ -283,14 +287,14 @@ function NotificationViewport({ toasts, onClose }) {
               <div className="toast-title">{toast.title}</div>
               <div className="toast-message">{toast.message}</div>
             </div>
-            <button type="button" className="toast-close" aria-label="Close notification" onClick={() => onClose(toast.id)}>
+            <button type="button" className="toast-close" aria-label={t("Close notification")} onClick={() => onClose(toast.id)}>
               ×
             </button>
           </div>
           {toast.actionHref ? (
             <div className="toast-actions">
               <Link className="btn btn-ghost" to={toast.actionHref}>
-                {toast.actionLabel || "Open"}
+                {toast.actionLabel || t("Open")}
               </Link>
             </div>
           ) : null}

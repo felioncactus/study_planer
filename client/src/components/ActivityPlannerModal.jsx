@@ -1,7 +1,8 @@
-
+﻿
 import RoundTimePicker from "./RoundTimePicker";
 import React, { useEffect, useMemo, useState } from "react";
 import { apiAiPlanActivity } from "../api/activities.api";
+import { useLanguage } from "../context/LanguageContext";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -34,8 +35,16 @@ function calendarVisibleRange(anchor) {
   return { gridStart: startOfWeekMonday(first), gridEnd: endOfWeekSunday(last) };
 }
 
-function monthLabel(date) {
-  return date.toLocaleString(undefined, { month: "long", year: "numeric" });
+const LOCALE_BY_LANGUAGE = {
+  en: "en-US",
+  ru: "ru-RU",
+  ko: "ko-KR",
+  kk: "kk-KZ",
+  uz: "uz-UZ",
+};
+
+function monthLabel(date, language) {
+  return date.toLocaleString(LOCALE_BY_LANGUAGE[language] || undefined, { month: "long", year: "numeric" });
 }
 
 function timeLabel(iso) {
@@ -63,6 +72,7 @@ export default function ActivityPlannerModal({
   preferredDate,
   activityMinutes,
 }) {
+  const { language, t } = useLanguage();
   const [anchor, setAnchor] = useState(() => new Date());
   const [selectedYmd, setSelectedYmd] = useState(() => toYmd(new Date()));
   const [picked, setPicked] = useState(null);
@@ -76,11 +86,11 @@ export default function ActivityPlannerModal({
 
   const presets = useMemo(
     () => [
-      { id: "evening", label: "Evening (18:00–22:00)", win: { start: "18:00", end: "22:00" } },
-      { id: "morning", label: "Morning (06:00–10:00)", win: { start: "06:00", end: "10:00" } },
-      { id: "afternoon", label: "Afternoon (12:00–18:00)", win: { start: "12:00", end: "18:00" } },
-      { id: "day", label: "Day (08:00–22:00)", win: { start: "08:00", end: "22:00" } },
-      { id: "custom", label: "Custom…", win: null },
+      { id: "evening", label: "Evening (18:00â€“22:00)", win: { start: "18:00", end: "22:00" } },
+      { id: "morning", label: "Morning (06:00â€“10:00)", win: { start: "06:00", end: "10:00" } },
+      { id: "afternoon", label: "Afternoon (12:00â€“18:00)", win: { start: "12:00", end: "18:00" } },
+      { id: "day", label: "Day (08:00â€“22:00)", win: { start: "08:00", end: "22:00" } },
+      { id: "custom", label: "Customâ€¦", win: null },
     ],
     []
   );
@@ -162,12 +172,12 @@ export default function ActivityPlannerModal({
       <div className="modal-card planner-modal-card">
         <div className="row planner-modal-header" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div className="planner-modal-title-block">
-            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>Plan this activity</div>
+            <div className="planner-modal-title" style={{ fontWeight: 750, fontSize: 18 }}>{t("Plan this activity")}</div>
             <div className="small muted">
-              Pick a clean time slot first, then save the activity.
+              {t("Pick a clean time slot first, then save the activity.")}
             </div>
             <div className="row planner-window-row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-              <label className="small muted" style={{ minWidth: 90 }}>Planning window</label>
+              <label className="small muted" style={{ minWidth: 90 }}>{t("Planning window")}</label>
               <select
                 value={windowPreset}
                 onChange={(e) => {
@@ -188,34 +198,34 @@ export default function ActivityPlannerModal({
               {windowPreset === "custom" ? (
                 <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <RoundTimePicker value={customStart} onChange={setCustomStart} disabled={!!loading} />
-                  <span className="small muted">to</span>
+                  <span className="small muted">{t("to")}</span>
                   <RoundTimePicker value={customEnd} onChange={setCustomEnd} disabled={!!loading} />
                   <button className="btn btn-ghost" onClick={() => applyWindow({ start: customStart, end: customEnd })} disabled={!!loading}>
-                    Apply
+                    {t("Apply")}
                   </button>
                 </div>
               ) : (
                 <div className="small muted">
-                  Window: {(currentStudyWindow?.start ?? suggestions?.studyWindow?.start)}–{(currentStudyWindow?.end ?? suggestions?.studyWindow?.end)}
+                  {t("Window")}: {(currentStudyWindow?.start ?? suggestions?.studyWindow?.start)}-{(currentStudyWindow?.end ?? suggestions?.studyWindow?.end)}
                 </div>
               )}
             </div>
           </div>
 
-          <button className="btn btn-ghost planner-close-btn" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost planner-close-btn" onClick={onClose}>âœ•</button>
         </div>
 
         <div className="planner-grid">
           <div className="planner-calendar">
             <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1))}>←</button>
-              <div style={{ fontWeight: 700 }}>{monthLabel(anchor)}</div>
-              <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1))}>→</button>
+              <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1))}>â†</button>
+              <div style={{ fontWeight: 700 }}>{monthLabel(anchor, language)}</div>
+              <button className="btn btn-ghost" onClick={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1))}>â†’</button>
             </div>
 
             <div className="planner-weekdays">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
-                <div key={label} className="small muted" style={{ textAlign: "center" }}>{label}</div>
+                <div key={label} className="small muted" style={{ textAlign: "center" }}>{t(label)}</div>
               ))}
             </div>
 
@@ -246,15 +256,15 @@ export default function ActivityPlannerModal({
 
           <div className="planner-mobile-slot-launch">
             <button type="button" className="btn btn-primary" onClick={() => setMobileSlotsOpen(true)}>
-              Suggested windows and AI
+              {t("Suggested windows and AI")}
             </button>
-            {picked ? <div className="small muted">A time plan is selected. Open to review or change it.</div> : null}
+            {picked ? <div className="small muted">{t("A time plan is selected. Open to review or change it.")}</div> : null}
           </div>
 
           <div className={`planner-slots${mobileSlotsOpen ? " is-mobile-open" : ""}`}>
             <div className="planner-mobile-sheet-head">
               <div>
-                <div style={{ fontWeight: 750 }}>Suggested windows</div>
+                <div style={{ fontWeight: 750 }}>{t("Suggested windows")}</div>
                 <div className="small muted">{selectedYmd}</div>
               </div>
               <button type="button" className="btn btn-ghost" onClick={() => setMobileSlotsOpen(false)} aria-label="Close suggested windows">
@@ -262,7 +272,7 @@ export default function ActivityPlannerModal({
               </button>
             </div>
             <div className="planner-slots-title" style={{ fontWeight: 750, marginBottom: 6 }}>
-              {selectedYmd} • Suggested windows
+              {selectedYmd} • {t("Suggested windows")}
             </div>
 
             {selectedInfo?.slots?.length ? (
@@ -280,24 +290,24 @@ export default function ActivityPlannerModal({
                       style={{ justifyContent: "space-between" }}
                       title={slot.fits ? "Use this slot" : `Too short (${slot.freeMinutes}m)`}
                     >
-                      <span>{timeLabel(slot.start)}–{timeLabel(slot.end)}</span>
+                      <span>{timeLabel(slot.start)}â€“{timeLabel(slot.end)}</span>
                       <span className="small muted">{slot.freeMinutes}m</span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="small muted">No free time inside this planning window.</div>
+              <div className="small muted">{t("No free time inside this planning window.")}</div>
             )}
 
             <div className="card" style={{ marginTop: 14, padding: 12 }}>
               <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div>
-                  <div style={{ fontWeight: 700 }}>AI arrange week</div>
-                  <div className="small muted">Ask AI to place this activity into the best slot or split the plan when needed.</div>
+                  <div style={{ fontWeight: 700 }}>{t("AI arrange week")}</div>
+                  <div className="small muted">{t("Ask AI to place this activity into the best slot or split the plan when needed.")}</div>
                 </div>
                 <button type="button" className="btn" onClick={runAiPlan} disabled={aiLoading || !activityTitle}>
-                  {aiLoading ? "Planning..." : "AI arrange week"}
+                  {aiLoading ? t("Planning...") : t("AI arrange week")}
                 </button>
               </div>
 
@@ -305,12 +315,12 @@ export default function ActivityPlannerModal({
 
               {aiPlan ? (
                 <div className="planner-ai-plan">
-                  <div className="small"><b>Plan:</b> {aiPlan.mode === "split" ? "Split plan" : "Single block"} • {aiPlan.totalMinutes} min</div>
+                  <div className="small"><b>Plan:</b> {aiPlan.mode === "split" ? "Split plan" : "Single block"} â€¢ {aiPlan.totalMinutes} min</div>
                   {(aiPlan.blocks || []).map((block, index) => (
                     <div key={index} className="small planner-ai-block">
                       <span>{block.label || activityTitle}</span>
                       <span className="planner-ai-time">
-                        {String(block.start).replace("T", " ").slice(0, 16)} → {String(block.end).replace("T", " ").slice(0, 16)}
+                        {String(block.start).replace("T", " ").slice(0, 16)} â†’ {String(block.end).replace("T", " ").slice(0, 16)}
                       </span>
                     </div>
                   ))}
@@ -326,7 +336,7 @@ export default function ActivityPlannerModal({
                         }
                       }}
                     >
-                      Use first slot
+                      {t("Use first slot")}
                     </button>
                   </div>
                 </div>
@@ -334,16 +344,16 @@ export default function ActivityPlannerModal({
             </div>
 
             <div className="row planner-modal-footer" style={{ justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
-              <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+              <button className="btn btn-ghost" onClick={onClose}>{t("Cancel")}</button>
               <button className="btn" disabled={!picked} onClick={() => onConfirm(picked)}>
-                Create activity
+                {t("Create activity")}
               </button>
             </div>
           </div>
         </div>
 
         <div className="small muted" style={{ marginTop: 10 }}>
-          The picked time becomes a fixed activity block on your calendar.
+          {t("The picked time becomes a fixed activity block on your calendar.")}
         </div>
       </div>
     </div>

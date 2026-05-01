@@ -1,12 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { apiGetNote, apiUpdateNote, apiDeleteNote } from "../api/notes.api";
 import { apiNoteAssistantHelp } from "../api/noteAssistant.api";
+import { useLanguage } from "../context/LanguageContext";
 
 
 function formatStamp(value) {
-  if (!value) return "—";
+  if (!value) return "â€”";
   const date = new Date(value);
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -131,6 +132,7 @@ function buildPrintableNoteHtml({ title, contentHtml }) {
 
 
 export default function NoteEditor() {
+  const { t } = useLanguage();
   const { noteId } = useParams();
   const navigate = useNavigate();
   const editorRef = useRef(null);
@@ -144,16 +146,20 @@ export default function NoteEditor() {
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
-      content: "Ask me to improve grammar, fix spelling, write an outline, summarize the lesson, or rewrite sections.",
+      content: t("Ask me to improve grammar, fix spelling, write an outline, summarize the lesson, or rewrite sections."),
     },
   ]);
   const [chatInput, setChatInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const [mobileFormatOpen, setMobileFormatOpen] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pendingSuggestion, setPendingSuggestion] = useState("");
+  const assistantWelcome = t("Ask me to improve grammar, fix spelling, write an outline, summarize the lesson, or rewrite sections.");
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
@@ -163,6 +169,14 @@ export default function NoteEditor() {
     const words = text ? text.split(" ").length : 0;
     return { words };
   }, [contentHtml]);
+
+  useEffect(() => {
+    setChatMessages((prev) => (
+      prev.length === 1 && prev[0]?.role === "assistant"
+        ? [{ ...prev[0], content: assistantWelcome }]
+        : prev
+    ));
+  }, [assistantWelcome]);
 
   useEffect(() => {
     let ignore = false;
@@ -404,19 +418,29 @@ export default function NoteEditor() {
         <div className="note-editor-topbar">
           <div>
             <div className="note-editor-backlink">
-              <Link to={note ? `/courses/${note.course_id}` : "/courses"}>← Back to course</Link>
+              <Link to={note ? `/courses/${note.course_id}` : "/courses"}>â† {t("Back to course")}</Link>
             </div>
             <div className="note-editor-meta">
-              {note?.course_name || "Course note"} · Created {formatStamp(note?.created_at)} · Updated {formatStamp(note?.updated_at)}
+              {note?.course_name || "Course note"} Â· Created {formatStamp(note?.created_at)} Â· Updated {formatStamp(note?.updated_at)}
             </div>
           </div>
 
-          <div className="note-editor-actions">
-            <button type="button" onClick={undo} disabled={!canUndo}>←</button>
-            <button type="button" onClick={redo} disabled={!canRedo}>→</button>
-            <button type="button" onClick={() => saveNote()} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
-            <button type="button" onClick={exportPdf}>Export PDF</button>
-            <button type="button" onClick={deleteNote} style={{ color: "crimson" }}>Delete</button>
+          <div className={`note-editor-actions${mobileActionsOpen ? " is-open" : ""}`}>
+            <button
+              type="button"
+              className="note-editor-mobile-actions-toggle"
+              onClick={() => setMobileActionsOpen((current) => !current)}
+              aria-expanded={mobileActionsOpen}
+              aria-label="Open note actions"
+            >
+              +
+            </button>
+            <button type="button" className="note-editor-mobile-assistant-button" onClick={() => { setAssistantOpen(true); setMobileActionsOpen(false); }}>{t("AI assistant")}</button>
+            <button type="button" onClick={undo} disabled={!canUndo}>â†</button>
+            <button type="button" onClick={redo} disabled={!canRedo}>â†’</button>
+            <button type="button" onClick={() => saveNote()} disabled={saving}>{saving ? t("Saving...") : t("Save")}</button>
+            <button type="button" onClick={exportPdf}>{t("Export PDF")}</button>
+            <button type="button" onClick={deleteNote} style={{ color: "crimson" }}>{t("Delete")}</button>
           </div>
         </div>
 
@@ -424,9 +448,17 @@ export default function NoteEditor() {
         {notice ? <div className="note-editor-alert note-editor-alert-success">{notice}</div> : null}
 
         {loading ? (
-          <div>Loading…</div>
+          <div>Loadingâ€¦</div>
         ) : (
           <div className="note-editor-layout">
+            {assistantOpen ? (
+              <button
+                type="button"
+                className="note-editor-assistant-backdrop"
+                onClick={() => setAssistantOpen(false)}
+                aria-label="Close AI assistant"
+              />
+            ) : null}
             <div className="card note-editor-card">
               <div className="note-editor-toolbar-wrap">
                 <input
@@ -436,15 +468,24 @@ export default function NoteEditor() {
                   className="note-editor-title-input"
                 />
 
-                <div className="note-editor-toolbar">
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("bold")}>Bold</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("italic")}>Italic</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("underline")}>Underline</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<H2>")}>Heading</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertUnorderedList")}>Bullets</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertOrderedList")}>Numbered</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<BLOCKQUOTE>")}>Quote</button>
-                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("removeFormat")}>Clear</button>
+                <button
+                  type="button"
+                  className="note-editor-mobile-format-toggle"
+                  onClick={() => setMobileFormatOpen((current) => !current)}
+                  aria-expanded={mobileFormatOpen}
+                >
+                  {t("Format")}
+                </button>
+
+                <div className={`note-editor-toolbar${mobileFormatOpen ? " is-open" : ""}`}>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("bold")}>{t("Bold")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("italic")}>{t("Italic")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("underline")}>{t("Underline")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<H2>")}>{t("Heading")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertUnorderedList")}>{t("Bullets")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("insertOrderedList")}>{t("Numbered")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("formatBlock", "<BLOCKQUOTE>")}>{t("Quote")}</button>
+                  <button type="button" className="note-editor-toolbar-button" onClick={() => runEditorCommand("removeFormat")}>{t("Clear")}</button>
                 </div>
               </div>
 
@@ -474,10 +515,11 @@ export default function NoteEditor() {
               />
             </div>
 
-            <aside className="card note-editor-sidebar">
+            <aside className={`card note-editor-sidebar${assistantOpen ? " is-open" : ""}`}>
               <div className="note-editor-sidebar-head">
-                <h3 className="note-editor-sidebar-title">AI assistant</h3>
-                <span className="note-editor-word-count">{stats.words} words</span>
+                <h3 className="note-editor-sidebar-title">{t("AI assistant")}</h3>
+                <span className="note-editor-word-count">{stats.words} {t("words")}</span>
+                <button type="button" className="note-editor-sidebar-close" onClick={() => setAssistantOpen(false)} aria-label="Close AI assistant">x</button>
               </div>
 
               <div className="note-editor-chat-list">
@@ -487,7 +529,7 @@ export default function NoteEditor() {
                     className={`note-editor-chat-bubble ${message.role === "user" ? "is-user" : "is-assistant"}`}
                   >
                     <div className="note-editor-chat-role">
-                      {message.role === "user" ? "You" : "Assistant"}
+                      {message.role === "user" ? t("You") : t("Assistant")}
                     </div>
                     <div>{message.content}</div>
                   </div>
@@ -500,10 +542,10 @@ export default function NoteEditor() {
                   rows={4}
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Fix grammar in this lesson, make an outline, improve clarity, summarize key points..."
+                  placeholder={t("Fix grammar in this lesson, make an outline, improve clarity, summarize key points...")}
                 />
                 <button type="submit" disabled={assistantBusy}>
-                  {assistantBusy ? "Working…" : "Ask assistant"}
+                  {assistantBusy ? t("Working...") : t("Ask assistant")}
                 </button>
               </form>
             </aside>

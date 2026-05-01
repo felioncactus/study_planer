@@ -1,7 +1,16 @@
 import { badRequest } from "../utils/httpError.js";
 import { getNoteForUser } from "./courseNotes.service.js";
+import { findUserById } from "../repositories/users.repo.js";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+
+const LANGUAGE_NAMES = {
+  en: "English",
+  ru: "Russian",
+  ko: "Korean",
+  kk: "Kazakh",
+  uz: "Uzbek",
+};
 
 function assertOpenAIKey() {
   if (!process.env.OPENAI_API_KEY) {
@@ -84,8 +93,13 @@ export async function getNoteAiHelp(userId, { noteId, title, contentHtml, messag
     .map((item) => `${item.role.toUpperCase()}: ${item.content}`)
     .join("\n");
 
+  const user = await findUserById(userId);
+  const languageName = LANGUAGE_NAMES[user?.language || "en"] || "English";
+
   const instructions = [
     "You are an academic note-writing assistant embedded inside a rich text editor.",
+    `Understand any language, but write chatMessage in ${languageName}.`,
+    `When editing text, keep the note's original language unless the user explicitly asks to translate it; if adding new prose, use ${languageName}.`,
     "You help with grammar, spelling, clarity, structure, outlines, study notes, and rewriting.",
     "Return ONLY valid JSON. No markdown fences.",
     "Preserve HTML structure when editing. Use semantic tags like p, h1, h2, h3, ul, ol, li, strong, em, blockquote.",

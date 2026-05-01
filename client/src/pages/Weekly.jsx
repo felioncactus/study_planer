@@ -4,6 +4,7 @@ import { apiListCalendarEvents } from "../api/calendar.api";
 import { apiListCourses } from "../api/courses.api";
 import { apiListTasks } from "../api/tasks.api";
 import { parseDateLike } from "../utils/date";
+import { useLanguage } from "../context/LanguageContext";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -29,8 +30,16 @@ function sameYmd(a, b) {
   return toYmd(parseDateLike(a)) === toYmd(parseDateLike(b));
 }
 
-function formatHumanDate(value) {
-  return new Intl.DateTimeFormat(undefined, {
+const LOCALE_BY_LANGUAGE = {
+  en: "en-US",
+  ru: "ru-RU",
+  ko: "ko-KR",
+  kk: "kk-KZ",
+  uz: "uz-UZ",
+};
+
+function formatHumanDate(value, language) {
+  return new Intl.DateTimeFormat(LOCALE_BY_LANGUAGE[language] || undefined, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -159,12 +168,14 @@ function getNowMarkerPosition(anchor, totalHeight, startHour, endHour) {
 }
 
 export default function Weekly() {
+  const { language, t } = useLanguage();
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
   const [events, setEvents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [timetableOpen, setTimetableOpen] = useState(false);
 
   const ymd = useMemo(() => toYmd(anchor), [anchor]);
   const courseMap = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
@@ -210,7 +221,7 @@ export default function Weekly() {
   const hourCount = endHour - startHour;
   const hourRowHeight = 88;
   const totalHeight = hourCount * hourRowHeight;
-  const hours = useMemo(() => Array.from({ length: hourCount + 1 }, (_, i) => i + startHour), []);
+  const hours = useMemo(() => Array.from({ length: hourCount + 1 }, (_, i) => i + startHour), [hourCount, startHour]);
   const summary = useMemo(() => {
     const counts = { course: 0, activity: 0, task: 0, other: 0 };
     for (const event of events) {
@@ -233,7 +244,7 @@ export default function Weekly() {
     <>
       <Navbar />
       <div className="container" style={{ marginTop: 20, marginBottom: 28 }}>
-        <div className="daily-shell">
+        <div className={`daily-shell ${timetableOpen ? "is-timetable-open" : ""}`}>
           <div className="card">
             <div className="page-header" style={{ margin: 0 }}>
               <div>
@@ -245,7 +256,10 @@ export default function Weekly() {
 
               <div className="row">
                 <button className="btn btn-ghost" onClick={() => setAnchor((current) => addDays(current, -1))}>← Previous</button>
-                <div className="chip">{isToday ? "Today" : formatHumanDate(anchor)}</div>
+                <div className="chip">{isToday ? t("Today") : formatHumanDate(anchor, language)}</div>
+                <button className="btn btn-primary daily-timetable-open-btn" type="button" onClick={() => setTimetableOpen(true)}>
+                  {t("Timetable")}
+                </button>
                 <button className="btn btn-ghost" onClick={() => setAnchor((current) => addDays(current, 1))}>Next →</button>
               </div>
             </div>
@@ -330,6 +344,25 @@ export default function Weekly() {
             </div>
           </div>
 
+          {timetableOpen ? (
+            <>
+              <button
+                type="button"
+                className="daily-timetable-backdrop"
+                aria-label="Close timetable"
+                onClick={() => setTimetableOpen(false)}
+              />
+              <div className="daily-timetable-head">
+                <div>
+                  <div className="section-title">Timetable</div>
+                  <div className="small muted">{isToday ? t("Today") : formatHumanDate(anchor, language)}</div>
+                </div>
+                <button className="btn btn-ghost" type="button" onClick={() => setTimetableOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </>
+          ) : null}
 
           <div className="daily-mobile-timeline card lift">
             <div className="section-title">Timetable</div>

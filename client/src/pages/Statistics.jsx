@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { apiGetStats } from "../api/stats.api";
+import { useLanguage } from "../context/LanguageContext";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -48,6 +49,7 @@ function MiniBars({ rows, valueKey, emptyLabel }) {
 }
 
 export default function Statistics() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -74,8 +76,8 @@ export default function Statistics() {
   }, []);
 
   const courseRows = useMemo(
-    () => (stats?.topCourses || []).map((course) => ({ ...course, name: `${course.name} (${course.open_tasks} open)` })),
-    [stats]
+    () => (stats?.topCourses || []).map((course) => ({ ...course, name: `${course.name} (${course.open_tasks} ${t("open")})` })),
+    [stats, t]
   );
 
   return (

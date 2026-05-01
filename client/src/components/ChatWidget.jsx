@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { apiAssistantMessage } from "../api/assistant.api";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 function escapeHtml(value) {
   return String(value || "")
@@ -53,17 +54,26 @@ function MarkdownBubble({ content }) {
 
 export default function ChatWidget() {
   const { token } = useAuth();
+  const { t } = useLanguage();
+  const welcomeContent = t("Study assistant welcome");
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState(() => [
     {
       role: "assistant",
-      content:
-        "Hi! I can help you:\n• add tasks\n• schedule your week\n• tell you what's due\n\nTry: **Add a 2-hour math assignment due Friday, then schedule my week.**",
+      content: welcomeContent,
     },
   ]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
+
+  useEffect(() => {
+    setMessages((prev) => (
+      prev.length === 1 && prev[0]?.role === "assistant"
+        ? [{ ...prev[0], content: welcomeContent }]
+        : prev
+    ));
+  }, [welcomeContent]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,11 +88,11 @@ export default function ChatWidget() {
     function onOpen() {
       setOpen(true);
     }
-    window.addEventListener("kepka:toggle-assistant", onToggle);
-    window.addEventListener("kepka:open-assistant", onOpen);
+    window.addEventListener("planёrka:toggle-assistant", onToggle);
+    window.addEventListener("planёrka:open-assistant", onOpen);
     return () => {
-      window.removeEventListener("kepka:toggle-assistant", onToggle);
-      window.removeEventListener("kepka:open-assistant", onOpen);
+      window.removeEventListener("planёrka:toggle-assistant", onToggle);
+      window.removeEventListener("planёrka:open-assistant", onOpen);
     };
   }, []);
 
@@ -116,23 +126,23 @@ export default function ChatWidget() {
       <button
         type="button"
         className="assistant-launcher"
-        aria-label={open ? "Close assistant" : "Open assistant"}
+        aria-label={open ? t("Close assistant") : t("Open assistant")}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         <span aria-hidden="true">✦</span>
-        <span className="assistant-launcher-text">Assistant</span>
+        <span className="assistant-launcher-text">{t("Assistant")}</span>
       </button>
 
       {open ? (
-        <section className="assistant-panel" aria-label="Study assistant panel">
+        <section className="assistant-panel" aria-label={t("Study assistant panel")}>
           <header className="assistant-panel-header">
             <div>
-              <div className="assistant-title">Study assistant</div>
-              <div className="assistant-subtitle">Tasks, planning, reminders</div>
+              <div className="assistant-title">{t("Study assistant")}</div>
+              <div className="assistant-subtitle">{t("Tasks, planning, reminders")}</div>
             </div>
             <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
-              Close
+              {t("Close")}
             </button>
           </header>
 
@@ -158,7 +168,7 @@ export default function ChatWidget() {
           </div>
 
           <div className="assistant-hint">
-            Markdown like <strong>bold</strong>, <em>italic</em>, lists, and <code>code</code> renders here.
+            {t("Markdown like bold, italic, lists, and code renders here.")}
           </div>
 
           <form
@@ -172,10 +182,10 @@ export default function ChatWidget() {
               className="assistant-input"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Ask about tasks, due dates, or your week..."
+              placeholder={t("Ask about tasks, due dates, or your week...")}
             />
             <button type="submit" className="btn btn-primary" disabled={loading || !text.trim()}>
-              Send
+              {t("Send")}
             </button>
           </form>
         </section>

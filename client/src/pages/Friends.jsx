@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { acceptFriend, blockUser, fetchFriends, removeFriend, requestFriend, unblockUser } from "../api/friends.api";
 import Navbar from "../components/Navbar";
 import { useNotifications } from "../context/NotificationsContext";
+import { useLanguage } from "../context/LanguageContext";
 
 function FriendCard({ friend, meta, actions }) {
   return (
@@ -42,6 +43,7 @@ function FriendSection({ title, actions, children }) {
 
 export default function Friends() {
   const { badge } = useNotifications();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState({ accepted: [], pending_inbound: [], pending_outbound: [], blocked: [] });
@@ -155,7 +157,7 @@ export default function Friends() {
       <main className="container stack friends-page">
         <section className="friends-hero card bg-texture">
           <div className="friends-hero-copy">
-            <div className="eyebrow">People & conversations</div>
+            <div className="eyebrow">{t("PEOPLE & CONVERSATIONS")}</div>
             <h1 className="friends-hero-title">Manage requests, keep classmates close, and jump straight into chat.</h1>
             <p className="small muted">
               Add friends by email, accept or block requests, and open direct conversations without leaving your workspace.
@@ -171,7 +173,7 @@ export default function Friends() {
 
           <div className="friends-hero-actions">
             <Link className="btn btn-primary" to="/chat">
-              Open chat page{badge ? ` (${badge})` : ""}
+              {t("Open chat page")}{badge ? ` (${badge})` : ""}
             </Link>
           </div>
         </section>

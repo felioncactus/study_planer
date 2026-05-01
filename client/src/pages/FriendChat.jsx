@@ -1,5 +1,6 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import {
@@ -21,6 +22,7 @@ import {
 import { apiListTasks, apiUpdateTask } from "../api/tasks.api";
 import { fetchFriends } from "../api/friends.api";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { formatBytes, renderChatMarkdown } from "../components/chatFormatting";
 
@@ -499,8 +501,8 @@ function GroupCreateCard({ acceptedFriends, onCreate, busy }) {
   }
 
   return (
-    <section className="chat-sidebar-card">
-      <div className="chat-sidebar-title-row">
+    <section className="chat-sidebar-card chat-group-create-card">
+      <div className="chat-sidebar-title-row chat-group-create-head">
         <div>
           <h3>Create group</h3>
           <p className="small muted">Start a focused room for assignments, revisions, or project work.</p>
@@ -511,19 +513,28 @@ function GroupCreateCard({ acceptedFriends, onCreate, busy }) {
       <div className="chat-form-grid">
         <label>
           <span className="small">Group name</span>
-          <input className="input" placeholder="Semester project team" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input className="input chat-group-name-input" placeholder="Semester project team" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
 
-        <div className="small muted">Choose accepted friends to add.</div>
+        <div className="chat-group-picker-label">
+          <span className="small muted">Choose accepted friends to add.</span>
+          <span className="small muted">{selected.length} selected</span>
+        </div>
 
         <div className="chat-member-picker" role="group" aria-label="Select friends for the group">
           {acceptedFriends.map((friend) => {
             const checked = selected.includes(friend.friend_id);
             return (
-              <label key={friend.friend_id} className={`chat-member-option${checked ? " is-selected" : ""}`}>
+              <label key={friend.friend_id} className={`chat-member-option chat-group-member-option${checked ? " is-selected" : ""}`}>
                 <input type="checkbox" checked={checked} onChange={() => toggle(friend.friend_id)} />
                 <span className="chat-member-avatar" aria-hidden="true">{getInitials(friend.friend_name || friend.friend_email)}</span>
-                <span>{friend.friend_name || friend.friend_email}</span>
+                <span className="chat-group-member-copy">
+                  <span>{friend.friend_name || friend.friend_email}</span>
+                  <span className="small muted">Accepted friend</span>
+                </span>
+                <span className="chat-group-check" aria-hidden="true">
+                  <Icon name="check" size={15} />
+                </span>
               </label>
             );
           })}
@@ -680,6 +691,7 @@ function TimerComposer({ title, endsAt, setTitle, setEndsAt, validationError, bu
 
 
 export default function FriendChat() {
+  const { t } = useLanguage();
   const { friendId, chatId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -718,6 +730,7 @@ export default function FriendChat() {
   const imageInputRef = useRef(null);
   const textAreaRef = useRef(null);
   const toolMenuRef = useRef(null);
+  const toolPanelRef = useRef(null);
   const emojiMenuRef = useRef(null);
   const formatMenuRef = useRef(null);
 
@@ -865,6 +878,7 @@ export default function FriendChat() {
     function handlePointerDown(event) {
       if (!toolMenuOpen) return;
       if (toolMenuRef.current?.contains(event.target)) return;
+      if (toolPanelRef.current?.contains(event.target)) return;
       setToolMenuOpen(false);
     }
 
@@ -1209,7 +1223,7 @@ export default function FriendChat() {
       <div className={`container chat-page-shell${hasSelectedConversation ? " has-chat-open" : ""}`}>
         <div className={`chat-page-header${hasSelectedConversation ? " has-chat-open" : ""}`}>
           <div>
-            <div className="eyebrow">Conversation hub</div>
+            <div className="eyebrow">{t("CONVERSATION HUB")}</div>
             <h1 className="chat-page-title">Chat built for actual work.</h1>
             <p className="chat-page-subtitle">
               Keep direct messages, self notes, polls, timers, and shared bot prompts in one calmer workspace.
@@ -1469,10 +1483,10 @@ export default function FriendChat() {
                               className="input chat-compose-textarea"
                               placeholder={
                                 !chat?.id
-                                  ? "Choose a chat to start typing."
+                                  ? "Type here..."
                                   : isReminderChat
-                                    ? "Task reminder bot is read-only. Use Start to do on a reminder card."
-                                    : "Write a message. Press Enter to send."
+                                    ? "Type here..."
+                                    : "Type here..."
                               }
                               value={text}
                               onChange={(e) => setText(e.target.value)}
@@ -1611,71 +1625,81 @@ export default function FriendChat() {
                                 </span>
                               </button>
 
-                              <div
-                                id="chat-special-menu"
-                                className={`chat-special-menu-panel${toolMenuOpen ? " is-open" : ""}`}
-                                aria-hidden={!toolMenuOpen}
-                              >
-                                <div className="chat-special-menu-header">
-                                  <div>
-                                    <div className="chat-special-menu-title">Group tools</div>
-                                    <div className="small muted">Launch a poll or shared timer without leaving the chat.</div>
+                              {toolMenuOpen ? createPortal(
+                                <div className="chat-special-menu-backdrop" onMouseDown={() => setToolMenuOpen(false)}>
+                                  <div
+                                    id="chat-special-menu"
+                                    className="chat-special-menu-panel is-open"
+                                    aria-hidden={false}
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-label="Group tools"
+                                    ref={toolPanelRef}
+                                    onMouseDown={(event) => event.stopPropagation()}
+                                  >
+                                    <div className="chat-special-menu-header">
+                                      <div>
+                                        <div className="chat-special-menu-title">Group tools</div>
+                                        <div className="small muted">Launch a poll or shared timer without leaving the chat.</div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="icon-btn chat-special-menu-close"
+                                        onClick={() => setToolMenuOpen(false)}
+                                        aria-label="Close group tools"
+                                      >
+                                        <Icon name="close" size={15} />
+                                      </button>
+                                    </div>
+
+                                    <div className="chat-special-menu-tabs" role="tablist" aria-label="Choose a group tool">
+                                      <button
+                                        type="button"
+                                        className={`chat-special-menu-tab${toolMenuMode === "poll" ? " is-active" : ""}`}
+                                        onClick={() => { setToolValidationError(""); setToolMenuMode("poll"); }}
+                                        role="tab"
+                                        aria-selected={toolMenuMode === "poll"}
+                                      >
+                                        <Icon name="poll" size={15} />
+                                        Poll
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`chat-special-menu-tab${toolMenuMode === "timer" ? " is-active" : ""}`}
+                                        onClick={() => { setToolValidationError(""); setToolMenuMode("timer"); }}
+                                        role="tab"
+                                        aria-selected={toolMenuMode === "timer"}
+                                      >
+                                        <Icon name="timer" size={15} />
+                                        Timer
+                                      </button>
+                                    </div>
+
+                                    {toolMenuMode === "poll" ? (
+                                      <PollComposer
+                                        question={pollQuestion}
+                                        options={pollOptions}
+                                        setQuestion={setPollQuestion}
+                                        setOptions={setPollOptions}
+                                        validationError={toolValidationError}
+                                        busy={busy}
+                                        onSubmit={handleCreatePoll}
+                                      />
+                                    ) : (
+                                      <TimerComposer
+                                        title={timerTitle}
+                                        endsAt={timerEndsAt}
+                                        setTitle={setTimerTitle}
+                                        setEndsAt={setTimerEndsAt}
+                                        validationError={toolValidationError}
+                                        busy={busy}
+                                        onSubmit={handleCreateTimer}
+                                      />
+                                    )}
                                   </div>
-                                  <button
-                                    type="button"
-                                    className="icon-btn chat-special-menu-close"
-                                    onClick={() => setToolMenuOpen(false)}
-                                    aria-label="Close group tools"
-                                  >
-                                    <Icon name="close" size={15} />
-                                  </button>
-                                </div>
-
-                                <div className="chat-special-menu-tabs" role="tablist" aria-label="Choose a group tool">
-                                  <button
-                                    type="button"
-                                    className={`chat-special-menu-tab${toolMenuMode === "poll" ? " is-active" : ""}`}
-                                    onClick={() => { setToolValidationError(""); setToolMenuMode("poll"); }}
-                                    role="tab"
-                                    aria-selected={toolMenuMode === "poll"}
-                                  >
-                                    <Icon name="poll" size={15} />
-                                    Poll
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={`chat-special-menu-tab${toolMenuMode === "timer" ? " is-active" : ""}`}
-                                    onClick={() => { setToolValidationError(""); setToolMenuMode("timer"); }}
-                                    role="tab"
-                                    aria-selected={toolMenuMode === "timer"}
-                                  >
-                                    <Icon name="timer" size={15} />
-                                    Timer
-                                  </button>
-                                </div>
-
-                                {toolMenuMode === "poll" ? (
-                                  <PollComposer
-                                    question={pollQuestion}
-                                    options={pollOptions}
-                                    setQuestion={setPollQuestion}
-                                    setOptions={setPollOptions}
-                                    validationError={toolValidationError}
-                                    busy={busy}
-                                    onSubmit={handleCreatePoll}
-                                  />
-                                ) : (
-                                  <TimerComposer
-                                    title={timerTitle}
-                                    endsAt={timerEndsAt}
-                                    setTitle={setTimerTitle}
-                                    setEndsAt={setTimerEndsAt}
-                                    validationError={toolValidationError}
-                                    busy={busy}
-                                    onSubmit={handleCreateTimer}
-                                  />
-                                )}
-                              </div>
+                                </div>,
+                                document.body,
+                              ) : null}
                             </div>
                           ) : null}
 

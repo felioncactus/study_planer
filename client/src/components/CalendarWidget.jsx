@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useLanguage } from "../context/LanguageContext";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -28,8 +29,16 @@ function endOfWeekSunday(d) {
   return end;
 }
 
-function monthLabel(date) {
-  return date.toLocaleString(undefined, { month: "long", year: "numeric" });
+const LOCALE_BY_LANGUAGE = {
+  en: "en-US",
+  ru: "ru-RU",
+  ko: "ko-KR",
+  kk: "kk-KZ",
+  uz: "uz-UZ",
+};
+
+function monthLabel(date, language) {
+  return date.toLocaleString(LOCALE_BY_LANGUAGE[language] || undefined, { month: "long", year: "numeric" });
 }
 
 function eventDayKey(ev) {
@@ -38,8 +47,8 @@ function eventDayKey(ev) {
   return s.slice(0, 10);
 }
 
-function eventTimeLabel(ev) {
-  if (ev.allDay) return "All day";
+function eventTimeLabel(ev, t) {
+  if (ev.allDay) return t("All day");
   const s = String(ev.start || "");
   const e = String(ev.end || "");
   const sh = s.includes("T") ? s.slice(11, 16) : "";
@@ -49,16 +58,16 @@ function eventTimeLabel(ev) {
   return "";
 }
 
-function shortType(ev) {
-  if (ev.type === "task") return "Task";
-  if (ev.type === "course") return "Course";
-  if (ev.type === "exam") return "Exam";
+function shortType(ev, t) {
+  if (ev.type === "task") return t("Task");
+  if (ev.type === "course") return t("Course");
+  if (ev.type === "exam") return t("Exam");
   if (ev.type === "block") {
-    if (ev?.meta?.blockType === "activity") return "Activity";
-    if (ev?.meta?.blockType === "task") return "Planned Task";
-    return "Block";
+    if (ev?.meta?.blockType === "activity") return t("Activity");
+    if (ev?.meta?.blockType === "task") return t("Planned Task");
+    return t("Block");
   }
-  return "Event";
+  return t("Event");
 }
 
 export function calendarVisibleRange(anchor) {
@@ -70,7 +79,9 @@ export function calendarVisibleRange(anchor) {
 }
 
 export default function CalendarWidget({ anchor, events, loading, onPrevMonth, onNextMonth }) {
+  const { language, t } = useLanguage();
   const [selected, setSelected] = useState(() => toYmd(new Date()));
+  const [pressedKey, setPressedKey] = useState("");
 
   const { gridStart } = useMemo(() => calendarVisibleRange(anchor), [anchor]);
 
@@ -100,6 +111,14 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
   const selectedEvents = eventsByDay.get(selected) || [];
   const detailsLoading = false;
 
+  function selectDay(key) {
+    setSelected(key);
+    setPressedKey(key);
+    window.setTimeout(() => {
+      setPressedKey((current) => (current === key ? "" : current));
+    }, 180);
+  }
+
   function isToday(d) {
     const now = new Date();
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
@@ -110,7 +129,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
       <div className="calendar-head">
         <div className="calendar-title">
           <div className="section-title" style={{ margin: 0 }}>Calendar</div>
-          <div className="muted small">{monthLabel(anchor)}</div>
+          <div className="muted small">{monthLabel(anchor, language)}</div>
         </div>
 
         <div className="row" style={{ gap: 8 }}>
@@ -122,7 +141,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
       <div className="calendar-grid-wrap">
         <div className="calendar-grid">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((w) => (
-            <div key={w} className="cal-weekday">{w}</div>
+            <div key={w} className="cal-weekday">{t(w)}</div>
           ))}
 
           {days.map((d) => {
@@ -136,8 +155,13 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
               <button
                 key={key}
                 type="button"
-                className={`cal-cell ${inMonth ? "" : "cal-out"} ${isSel ? "cal-selected" : ""} ${isToday(d) ? "cal-today" : ""}`}
-                onClick={() => setSelected(key)}
+                className={`cal-cell ${inMonth ? "" : "cal-out"} ${isSel ? "cal-selected" : ""} ${pressedKey === key ? "cal-pressed" : ""} ${isToday(d) ? "cal-today" : ""}`}
+                onPointerDown={(event) => {
+                  if (event.pointerType !== "mouse") selectDay(key);
+                }}
+                onClick={() => {
+                  if (selected !== key) selectDay(key);
+                }}
               >
                 <div className="cal-day">
                   <span className="cal-num">{d.getDate()}</span>
@@ -149,7 +173,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
                     <div
                       key={ev.id}
                       className={`cal-event cal-${ev.type}`}
-                      title={`${shortType(ev)} • ${ev.title}`}
+                      title={`${shortType(ev, t)} • ${ev.title}`}
                       style={{
                         borderLeftColor: ev?.meta?.color || undefined,
                       }}
@@ -157,7 +181,7 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
                       {ev.title}
                     </div>
                   ))}
-                  {count > 3 ? <div className="cal-more muted small">+{count - 3} more</div> : null}
+                  {count > 3 ? <div className="cal-more muted small">+{count - 3} {t("more")}</div> : null}
                 </div>
               </button>
             );
@@ -173,16 +197,16 @@ export default function CalendarWidget({ anchor, events, loading, onPrevMonth, o
           {detailsLoading ? (
             <div className="muted">Loading…</div>
           ) : selectedEvents.length === 0 ? (
-            <div className="muted">No events.</div>
+            <div className="muted">{loading ? "Checking events..." : "No events."}</div>
           ) : (
             <div className="cal-side-list">
               {selectedEvents.map((ev) => (
                 <div key={ev.id} className={`cal-side-item cal-${ev.type}`}>
                   <div className="cal-side-top">
                     <div className="cal-side-title">{ev.title}</div>
-                    <div className="cal-side-time muted small">{eventTimeLabel(ev)}</div>
+                    <div className="cal-side-time muted small">{eventTimeLabel(ev, t)}</div>
                   </div>
-                  <div className="cal-side-meta muted small">{shortType(ev)}</div>
+                  <div className="cal-side-meta muted small">{shortType(ev, t)}</div>
                 </div>
               ))}
             </div>

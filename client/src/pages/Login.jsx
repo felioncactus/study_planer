@@ -26,7 +26,7 @@ export default function Login() {
   return (
     <div className="auth-shell">
       <div className="auth-panel auth-panel-copy">
-        <div className="auth-badge">Kepka</div>
+        <div className="auth-badge">PLANЁRKA</div>
         <h1 className="auth-hero-title">A calmer workspace for courses, tasks, notes, and friends.</h1>
         <p className="auth-hero-text">
           Keep your semester organized with a product that feels structured, readable, and built for real daily use.

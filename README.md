@@ -1,6 +1,6 @@
-# Kepka Study Workspace
+# PLANЁRKA
 
-Kepka is a full-stack student workspace for courses, tasks, calendar planning, notes, friends, and chat. It is built as a PERN-style app with a React/Vite client, an Express API, and PostgreSQL.
+PLANЁRKA is a full-stack student workspace for courses, tasks, calendar planning, notes, friends, and chat. It is built as a PERN-style app with a React/Vite client, an Express API, and PostgreSQL.
 
 The current UI is designed to be responsive across desktop and mobile, with compact navigation, mobile bottom navigation, adaptive cards, polished chat surfaces, and a multilingual interface.
 
@@ -89,7 +89,7 @@ Example:
 PORT=5000
 CORS_ORIGIN=http://localhost:5173
 
-DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/study_planner
+DATABASE_URL=postgres://postgres:YOUR_PASSWORD@localhost:5432/planorka
 
 JWT_SECRET=change_me_super_secret
 JWT_EXPIRES_IN=7d
@@ -125,13 +125,13 @@ VITE_API_BASE_URL=/api
 Create the database:
 
 ```bash
-createdb -U postgres study_planner
+createdb -U postgres planorka
 ```
 
 Enable UUID support:
 
 ```bash
-psql -U postgres -d study_planner -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+psql -U postgres -d planorka -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 ```
 
 Run migrations:

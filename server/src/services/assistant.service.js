@@ -3,8 +3,17 @@ import { createTaskForUser, listTasks, updateTaskForUser } from "./tasks.service
 import { listCourses, createCourseForUser } from "./courses.service.js";
 import { scheduleWeekForUser } from "./scheduler.service.js";
 import { listCalendarBlocksByUserId } from "../repositories/calendarBlocks.repo.js";
+import { findUserById } from "../repositories/users.repo.js";
 
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+
+const LANGUAGE_NAMES = {
+  en: "English",
+  ru: "Russian",
+  ko: "Korean",
+  kk: "Kazakh",
+  uz: "Uzbek",
+};
 
 function assertOpenAIKey() {
   if (!process.env.OPENAI_API_KEY) {
@@ -266,7 +275,12 @@ export async function runAssistantForUser(userId, messages) {
     content: m.content,
   }));
 
+  const user = await findUserById(userId);
+  const languageName = LANGUAGE_NAMES[user?.language || "en"] || "English";
+
   const instructions = `You are a study-planner assistant. Your job: help the user plan tasks and manage a realistic schedule.
+- Understand the user's request in any language, but respond in ${languageName}.
+- If you create task/course titles from user-provided text, preserve the user's language unless they ask otherwise.
 - If the user asks to add a task, call create_task.
 - If the user asks what they must do, call list_tasks.
 - If the user asks to mark something complete, call mark_task_done.
